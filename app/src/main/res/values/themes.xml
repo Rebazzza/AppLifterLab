@@ -1,8 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.LifterLab" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Colores Principales -->
+        <item name="colorPrimary">@color/primary_accent</item>
+        <item name="colorSecondary">@color/secondary_accent</item>
+        <item name="colorTertiary">@color/tertiary_accent</item>
+        <item name="colorError">@color/error_accent</item>
+        
+        <!-- Fondos y Contenedores -->
+        <item name="android:colorBackground">@color/bg_background</item>
+        <item name="colorSurface">@color/bg_surface_container</item>
+        <item name="colorOutline">@color/outline_variant</item>
+        
+        <!-- Status Bar & Navigation Bar -->
+        <item name="android:statusBarColor">@color/bg_background</item>
+        <item name="android:navigationBarColor">@color/bg_surface_container_low</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="Theme.LifterLab" parent="Base.Theme.LifterLab" />

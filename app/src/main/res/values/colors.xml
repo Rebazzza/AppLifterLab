@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Fondo Oscuro Puro y Contenedores -->
+    <color name="bg_background">#131315</color>
+    <color name="bg_surface_container">#201F22</color>
+    <color name="bg_surface_container_low">#1C1B1D</color>
+    <color name="bg_surface_container_high">#2A2A2C</color>
+    <color name="outline_variant">#464554</color>
+
+    <!-- Colores de Acento Principales -->
+    <color name="primary_accent">#6567E3</color> <!-- Azul / Violeta Principal -->
+    <color name="primary_container">#8083FF</color>
+    <color name="secondary_accent">#FFB77D</color> <!-- Naranja / Ambar -->
+    <color name="secondary_container">#D97707</color>
+    <color name="tertiary_accent">#4EDEA3</color> <!-- Verde Neón / Racha -->
+    <color name="error_accent">#FFB4AB</color> <!-- Rojo Alerta / Sentadilla -->
+
+    <!-- Colores Oficiales IPF para Discos (Calculadora de Barra) -->
+    <color name="ipf_red_25kg">#E53935</color>
+    <color name="ipf_blue_20kg">#1E88E5</color>
+    <color name="ipf_yellow_15kg">#FDD835</color>
+    <color name="ipf_green_10kg">#43A047</color>
+    <color name="ipf_white_5kg">#FAFAFA</color>
+    <color name="ipf_black_2_5kg">#212121</color>
+
+    <!-- Textos y Tipografía -->
+    <color name="text_on_background">#E5E1E4</color>
+    <color name="text_on_surface_variant">#C7C4D7</color>
 </resources>

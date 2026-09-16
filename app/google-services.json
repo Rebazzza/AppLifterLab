@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "47068949368",
+    "firebase_url": "https://lifterlab-d956f-default-rtdb.firebaseio.com",
+    "project_id": "lifterlab-d956f",
+    "storage_bucket": "lifterlab-d956f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47068949368:android:94bc53d9cf3a49b2e0368d",
+        "android_client_info": {
+          "package_name": "com.example.lifterlab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoz5OmhMBBQ-re2YjRHLTI-CRRz4gXy_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

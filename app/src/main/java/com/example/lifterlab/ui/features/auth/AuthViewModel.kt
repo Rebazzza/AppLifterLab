@@ -1,9 +1,11 @@
 package com.example.lifterlab.ui.features.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifterlab.data.model.UserProfile
 import com.example.lifterlab.data.repository.AuthRepository
+import com.example.lifterlab.data.seed.FirestoreSeeder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val repository: AuthRepository = AuthRepository()
+    private val repository: AuthRepository = AuthRepository(),
+    private val seeder: FirestoreSeeder = FirestoreSeeder()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -34,6 +37,8 @@ class AuthViewModel(
         viewModelScope.launch {
             val result = repository.login(trimmedEmail, pass)
             result.onSuccess { user ->
+                // Ejecutar el seeder solo si es la primera vez (documento aún no existe)
+                runSeedIfNeeded(user.uid)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -95,6 +100,8 @@ class AuthViewModel(
         viewModelScope.launch {
             val result = repository.register(trimmedEmail, pass, profile)
             result.onSuccess { user ->
+                // Sembrar datos iniciales para el nuevo usuario recién registrado
+                runSeedIfNeeded(user.uid)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -113,6 +120,20 @@ class AuthViewModel(
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Ejecuta el seeder solo si el documento del usuario NO existe todavía en Firestore.
+     * Esto garantiza que los datos iniciales se crean una sola vez, ya sea tras el primer
+     * login (cuenta ya existente sin datos) o tras el registro.
+     */
+    private suspend fun runSeedIfNeeded(userId: String) {
+        val result = seeder.seedInitialData(userId)
+        result.onSuccess {
+            Log.d("AuthViewModel", "Seed completado exitosamente para el usuario $userId")
+        }.onFailure { e ->
+            Log.e("AuthViewModel", "Error durante el seed: ${e.message}", e)
         }
     }
 

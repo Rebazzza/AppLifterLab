@@ -65,6 +65,30 @@
         android:id="@+id/WarmupFragment"
         android:name="com.example.lifterlab.ui.features.warmup.WarmupFragment"
         android:label="Series de Aproximación"
-        tools:layout="@layout/fragment_warmup" />
+        tools:layout="@layout/fragment_warmup">
+
+        <action
+            android:id="@+id/action_WarmupFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.lifterlab.ui.features.profile.ProfileFragment"
+        android:label="Mi Perfil"
+        tools:layout="@layout/fragment_profile">
+
+        <action
+            android:id="@+id/action_profileFragment_to_loginFragment"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_profileFragment_to_WarmupFragment"
+            app:destination="@id/WarmupFragment"
+            app:popUpTo="@id/profileFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
 
 </navigation>

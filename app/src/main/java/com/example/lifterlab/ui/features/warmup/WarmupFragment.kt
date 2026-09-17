@@ -12,6 +12,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
+import androidx.appcompat.widget.PopupMenu
 import com.example.lifterlab.R
 import com.example.lifterlab.databinding.FragmentWarmupBinding
 import com.example.lifterlab.databinding.ItemWarmupSetBinding
@@ -61,6 +63,29 @@ class WarmupFragment : Fragment() {
         binding.btnSaveSession.setOnClickListener {
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: "demo_user"
             viewModel.saveSession(userId)
+        }
+        
+        binding.btnOptions.setOnClickListener { view ->
+            val popup = PopupMenu(requireContext(), view)
+            popup.menuInflater.inflate(R.menu.menu_main, popup.menu)
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_profile -> {
+                        findNavController().navigate(R.id.action_WarmupFragment_to_profileFragment)
+                        true
+                    }
+                    R.id.action_warmup -> {
+                        true
+                    }
+                    R.id.action_sign_out -> {
+                        FirebaseAuth.getInstance().signOut()
+                        findNavController().navigate(R.id.loginFragment)
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
         }
     }
 

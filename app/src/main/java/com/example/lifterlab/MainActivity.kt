@@ -1,39 +1,41 @@
 package com.example.lifterlab
 
 import android.os.Bundle
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.navigation.fragment.NavHostFragment
-import com.example.lifterlab.databinding.ActivityMainBinding
+import com.example.lifterlab.ui.features.auth.LoginFragment
+import com.example.lifterlab.ui.features.warmup.WarmupFragment
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
-    private lateinit var navController: androidx.navigation.NavController
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        val container = FrameLayout(this)
+        container.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        setContentView(container)
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment
-        navController = navHostFragment.navController
-
-        // Si no hay sesión activa, redirigir al Login
         if (FirebaseAuth.getInstance().currentUser == null) {
-            navController.navigate(R.id.loginFragment)
+            supportFragmentManager.beginTransaction()
+                .replace(android.R.id.content, LoginFragment())
+                .commit()
+        } else {
+            supportFragmentManager.beginTransaction()
+                .replace(android.R.id.content, WarmupFragment())
+                .commit()
         }
     }
 }

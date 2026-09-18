@@ -1,44 +1,55 @@
 package com.example.lifterlab
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.navigation.fragment.findNavController
-import com.example.lifterlab.databinding.FragmentSecondBinding
+import android.widget.*
+import androidx.fragment.app.Fragment
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import com.example.lifterlab.*
+import android.content.res.ColorStateList
 
-/**
- * A simple [Fragment] subclass as the second destination in the navigation.
- */
 class SecondFragment : Fragment() {
-
-    private var _binding: FragmentSecondBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
-    private val binding get() = _binding!!
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
-        _binding = FragmentSecondBinding.inflate(inflater, container, false)
-        return binding.root
-
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        binding.buttonSecond.setOnClickListener {
-            findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
+        val root = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPaddingH(dp(16f), dp(16f))
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         }
-    }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        val button = Button(requireContext()).apply {
+            text = "Previous"
+            setAllCaps(true)
+            setTextColor(BG_BACKGROUND)
+            background = bgPrimaryButton()
+            setPadding(dp(24f), dp(12f), dp(24f), dp(12f))
+            setMargins(0, 16, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, dp(48f))
+        }
+        button.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(android.R.id.content, FirstFragment())
+                .commit()
+        }
+        root.addView(button)
+
+        val textView = TextView(requireContext()).apply {
+            text = "Lorem ipsum dolor sit amet."
+            setTextColor(TEXT_ON_BACKGROUND)
+            setTextSizeSp(16f)
+            setPadding(0, dp(16f), 0, 0)
+            setMargins(0, 0, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+        }
+        root.addView(textView)
+
+        return root
     }
 }
+
+

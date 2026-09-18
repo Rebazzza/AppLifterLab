@@ -1,21 +1,9 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
     <style name="Base.Theme.LifterLab" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Colores Principales -->
-        <item name="colorPrimary">@color/primary_accent</item>
-        <item name="colorSecondary">@color/secondary_accent</item>
-        <item name="colorTertiary">@color/tertiary_accent</item>
-        <item name="colorError">@color/error_accent</item>
-        
-        <!-- Fondos y Contenedores -->
-        <item name="android:colorBackground">@color/bg_background</item>
-        <item name="colorSurface">@color/bg_surface_container</item>
-        <item name="colorOutline">@color/outline_variant</item>
-        
-        <!-- Status Bar & Navigation Bar -->
-        <item name="android:statusBarColor">@color/bg_background</item>
-        <item name="android:navigationBarColor">@color/bg_surface_container_low</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
     </style>
-
     <style name="Theme.LifterLab" parent="Base.Theme.LifterLab" />
 </resources>

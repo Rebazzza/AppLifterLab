@@ -1,89 +1,232 @@
 package com.example.lifterlab.ui.features.auth
 
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import android.widget.*
+import android.content.res.ColorStateList
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
-import com.example.lifterlab.R
-import com.example.lifterlab.databinding.FragmentLoginBinding
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import com.example.lifterlab.BG_BACKGROUND
+import com.example.lifterlab.BG_SURFACE_CONTAINER
+import com.example.lifterlab.BG_SURFACE_CONTAINER_LOW
+import com.example.lifterlab.OUTLINE_VARIANT
+import com.example.lifterlab.PRIMARY_ACCENT
+import com.example.lifterlab.PRIMARY_CONTAINER
+import com.example.lifterlab.SECONDARY_ACCENT
+import com.example.lifterlab.TEXT_ON_BACKGROUND
+import com.example.lifterlab.TEXT_ON_SURFACE_VARIANT
+import com.example.lifterlab.dp
+import com.example.lifterlab.setTextSizeSp
+import com.example.lifterlab.setTypefaceMedium
+import com.example.lifterlab.setMargins
+import com.example.lifterlab.toast
+import com.example.lifterlab.bgTagChip
+import com.example.lifterlab.bgPrimaryButton
+import com.example.lifterlab.bgPrimaryContainer
+import com.example.lifterlab.setPaddingH
+import com.example.lifterlab.ui.features.warmup.WarmupFragment
+import com.example.lifterlab.data.repository.AuthRepository
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
 
 class LoginFragment : Fragment() {
-
-    private var _binding: FragmentLoginBinding? = null
-    private val binding get() = _binding!!
-
-    private val viewModel: AuthViewModel by viewModels()
+    private val repository = AuthRepository()
+    private var isLoading = false
+    private var errorMessage: String? = null
+    private lateinit var etEmail: TextInputEditText
+    private lateinit var etPassword: TextInputEditText
+    private lateinit var btnLogin: MaterialButton
+    private lateinit var tvGoToRegister: TextView
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentLoginBinding.inflate(inflater, container, false)
-        return binding.root
+        val root = ScrollView(requireContext()).apply {
+            setFillViewport(true)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            setBackgroundColor(BG_BACKGROUND)
+        }
+        val cl = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPaddingH(dp(24f), dp(24f))
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        }
+
+        val badge = TextView(requireContext()).apply {
+            text = "LIFTERLAB • ACCESO"
+            setTextColor(PRIMARY_CONTAINER)
+            setTextSizeSp(11f)
+            setTypefaceMedium()
+            background = bgTagChip()
+            setMargins(0, 24, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+        }
+        cl.addView(badge)
+
+        val title = TextView(requireContext()).apply {
+            text = "Iniciar Sesión"
+            setTextColor(TEXT_ON_BACKGROUND)
+            setTextSizeSp(26f)
+            setTypefaceMedium()
+            setMargins(0, 12, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+        }
+        cl.addView(title)
+
+        val subtitle = TextView(requireContext()).apply {
+            text = "Bienvenido de vuelta a tu laboratorio de fuerza"
+            setTextColor(TEXT_ON_SURFACE_VARIANT)
+            setTextSizeSp(13f)
+            setMargins(0, 4, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+        }
+        cl.addView(subtitle)
+
+        val card = MaterialCardView(requireContext()).apply {
+            setCardBackgroundColor(BG_SURFACE_CONTAINER_LOW)
+            radius = 12f
+            strokeColor = OUTLINE_VARIANT
+            strokeWidth = 1
+            setMargins(0, 28, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+        }
+        val cardLayout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20f), dp(20f), dp(20f), dp(20f))
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+        }
+        cardLayout.addView(TextView(requireContext()).apply {
+            text = "CREDENCIALES DE ATLETA"
+            setTextColor(SECONDARY_ACCENT)
+            setTextSizeSp(11f)
+            setTypefaceMedium()
+            layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+        })
+
+        val tilEmail = TextInputLayout(requireContext()).apply {
+            setBackgroundColor(BG_SURFACE_CONTAINER)
+            boxStrokeColor = PRIMARY_ACCENT
+            hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
+            setMargins(0, 16, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+        }
+        etEmail = TextInputEditText(requireContext()).apply {
+            inputType = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            setTextColor(TEXT_ON_BACKGROUND)
+            setTextSizeSp(16f)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+        }
+        tilEmail.addView(etEmail)
+        cardLayout.addView(tilEmail)
+
+        val tilPassword = TextInputLayout(requireContext()).apply {
+            setBackgroundColor(BG_SURFACE_CONTAINER)
+            boxStrokeColor = PRIMARY_ACCENT
+            hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
+            endIconMode = TextInputLayout.END_ICON_PASSWORD_TOGGLE
+            setMargins(0, 14, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+        }
+        etPassword = TextInputEditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setTextColor(TEXT_ON_BACKGROUND)
+            setTextSizeSp(16f)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+        }
+        tilPassword.addView(etPassword)
+        cardLayout.addView(tilPassword)
+
+        btnLogin = MaterialButton(requireContext()).apply {
+            text = "INICIAR SESIÓN"
+            setAllCaps(true)
+            setTextColor(TEXT_ON_BACKGROUND)
+            setTextSizeSp(13f)
+            setTypefaceMedium()
+            setBackgroundResource(0)
+            background = bgPrimaryButton()
+            setMargins(0, 22, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, dp(52f))
+        }
+        btnLogin.setOnClickListener {
+            val email = etEmail.text.toString()
+            val pass = etPassword.text.toString()
+            login(email, pass)
+        }
+        cardLayout.addView(btnLogin)
+        card.addView(cardLayout)
+        cl.addView(card)
+
+        tvGoToRegister = TextView(requireContext()).apply {
+            text = "¿No tienes una cuenta? Regístrate aquí"
+            setTextColor(PRIMARY_CONTAINER)
+            setTextSizeSp(14f)
+            setTypefaceMedium()
+            setMargins(0, 24, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+            setOnClickListener {
+                parentFragmentManager.beginTransaction()
+                    .replace(android.R.id.content, RegisterFragment())
+                    .commit()
+            }
+        }
+        cl.addView(tvGoToRegister)
+
+        progressBar = ProgressBar(requireContext()).apply {
+            visibility = View.GONE
+            indeterminateTintList = ColorStateList.valueOf(PRIMARY_ACCENT)
+            setMargins(0, 8, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+        }
+        cl.addView(progressBar)
+        root.addView(cl)
+        return root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        // Si ya hay sesión activa, navegar directo al Warmup
-        if (viewModel.uiState.value.isUserLoggedIn) {
-            navigateToWarmup()
+    private fun login(email: String, pass: String) {
+        val trimmedEmail = email.trim()
+        if (trimmedEmail.isBlank() || pass.isBlank()) {
+            errorMessage = "Por favor, completa todos los campos."
+            renderState()
             return
         }
-
-        setupListeners()
-        observeUiState()
-    }
-
-    private fun setupListeners() {
-        binding.btnLogin.setOnClickListener {
-            val email = binding.etEmail.text.toString()
-            val pass = binding.etPassword.text.toString()
-            viewModel.login(email, pass)
-        }
-
-        binding.tvGoToRegister.setOnClickListener {
-            findNavController().navigate(R.id.action_loginFragment_to_registerFragment)
-        }
-    }
-
-    private fun observeUiState() {
+        isLoading = true
+        errorMessage = null
+        renderState()
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    binding.progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
-                    binding.btnLogin.isEnabled = !state.isLoading
-                    binding.tvGoToRegister.isEnabled = !state.isLoading
-
-                    if (state.errorMessage != null) {
-                        Toast.makeText(requireContext(), state.errorMessage, Toast.LENGTH_LONG).show()
-                        viewModel.resetState()
-                    }
-
-                    if (state.isSuccess && state.isUserLoggedIn) {
-                        navigateToWarmup()
-                    }
-                }
+            val result = repository.login(trimmedEmail, pass)
+            result.onSuccess {
+                isLoading = false
+                navigateToWarmup()
+            }.onFailure { error ->
+                isLoading = false
+                errorMessage = error.localizedMessage ?: "Error al iniciar sesión."
+                renderState()
             }
         }
     }
 
     private fun navigateToWarmup() {
-        findNavController().navigate(
-            R.id.action_loginFragment_to_warmupFragment
-        )
+        parentFragmentManager.beginTransaction()
+            .replace(android.R.id.content, WarmupFragment())
+            .commit()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    private fun renderState() {
+        progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        btnLogin.isEnabled = !isLoading
+        tvGoToRegister.isEnabled = !isLoading
+if (errorMessage != null) { val msg = errorMessage; requireView().toast(msg!!); errorMessage = null }
     }
 }
+

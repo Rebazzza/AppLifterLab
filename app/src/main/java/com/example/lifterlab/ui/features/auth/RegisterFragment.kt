@@ -1,5 +1,7 @@
 package com.example.lifterlab.ui.features.auth
 
+import android.R as AndroidR
+import android.view.Gravity
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
@@ -43,15 +45,17 @@ class RegisterFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val root = ScrollView(requireContext()).apply {
-            setFillViewport(true)
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            isFillViewport = true
+            layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
             setBackgroundColor(BG_BACKGROUND)
         }
         val cl = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
-            setPaddingH(dp(20f), dp(20f))
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            gravity = Gravity.TOP
+            setPadding(dp(20f), dp(48f), dp(20f), dp(32f))
+            layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
         }
+        root.addView(cl)
 
         val badge = TextView(requireContext()).apply {
             text = "LIFTERLAB • NUEVO ATLETA"
@@ -106,6 +110,7 @@ class RegisterFragment : Fragment() {
         })
 
         val tilName = TextInputLayout(requireContext()).apply {
+            hint = "Nombre Completo"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -122,6 +127,7 @@ class RegisterFragment : Fragment() {
         cardLayout.addView(tilName)
 
         val tilEmail = TextInputLayout(requireContext()).apply {
+            hint = "Correo Electrónico"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -138,6 +144,7 @@ class RegisterFragment : Fragment() {
         cardLayout.addView(tilEmail)
 
         val tilPassword = TextInputLayout(requireContext()).apply {
+            hint = "Contraseña"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -155,6 +162,7 @@ class RegisterFragment : Fragment() {
         cardLayout.addView(tilPassword)
 
         val tilConfirm = TextInputLayout(requireContext()).apply {
+            hint = "Confirmar Contraseña"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -186,6 +194,7 @@ class RegisterFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
         }
         val tilWeight = TextInputLayout(requireContext()).apply {
+            hint = "Peso Corporal (kg)"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -202,6 +211,7 @@ class RegisterFragment : Fragment() {
         row.addView(tilWeight)
 
         val tilBarWeight = TextInputLayout(requireContext()).apply {
+            hint = "Peso de Barra (kg)"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -244,8 +254,10 @@ class RegisterFragment : Fragment() {
             setMargins(0, 20, 0, 24)
             layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
             setOnClickListener {
+                val containerId = (requireView().parent as? View)?.id ?: AndroidR.id.content
                 parentFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, LoginFragment())
+                    .replace(containerId, LoginFragment())
+                    .addToBackStack(null)
                     .commit()
             }
         }
@@ -258,7 +270,6 @@ class RegisterFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
         }
         cl.addView(progressBar)
-        root.addView(cl)
         return root
     }
 
@@ -299,8 +310,9 @@ class RegisterFragment : Fragment() {
                 seeder.seedInitialData(user.uid)
                 isLoading = false
                 requireView().toast("¡Registro exitoso! Bienvenido a LifterLab.")
+                val containerId = (view?.parent as? View)?.id ?: AndroidR.id.content
                 parentFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, WarmupFragment())
+                    .replace(containerId, WarmupFragment())
                     .commit()
             }.onFailure { error ->
                 isLoading = false

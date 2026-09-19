@@ -1,5 +1,6 @@
 package com.example.lifterlab.ui.features.auth
 
+import android.R as AndroidR
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
@@ -7,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import android.content.res.ColorStateList
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -32,6 +32,7 @@ import com.example.lifterlab.bgPrimaryContainer
 import com.example.lifterlab.setPaddingH
 import com.example.lifterlab.ui.features.warmup.WarmupFragment
 import com.example.lifterlab.data.repository.AuthRepository
+import android.view.Gravity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -53,15 +54,17 @@ class LoginFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val root = ScrollView(requireContext()).apply {
-            setFillViewport(true)
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            isFillViewport = true
+            layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
             setBackgroundColor(BG_BACKGROUND)
         }
         val cl = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
-            setPaddingH(dp(24f), dp(24f))
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            gravity = Gravity.TOP
+            setPadding(dp(24f), dp(48f), dp(24f), dp(32f))
+            layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
         }
+        root.addView(cl)
 
         val badge = TextView(requireContext()).apply {
             text = "LIFTERLAB • ACCESO"
@@ -115,6 +118,7 @@ class LoginFragment : Fragment() {
         })
 
         val tilEmail = TextInputLayout(requireContext()).apply {
+            hint = "Correo Electrónico"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -131,6 +135,7 @@ class LoginFragment : Fragment() {
         cardLayout.addView(tilEmail)
 
         val tilPassword = TextInputLayout(requireContext()).apply {
+            hint = "Contraseña"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -175,8 +180,10 @@ class LoginFragment : Fragment() {
             setMargins(0, 24, 0, 0)
             layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
             setOnClickListener {
+                val containerId = (requireView().parent as? View)?.id ?: AndroidR.id.content
                 parentFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, RegisterFragment())
+                    .replace(containerId, RegisterFragment())
+                    .addToBackStack(null)
                     .commit()
             }
         }
@@ -189,7 +196,6 @@ class LoginFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
         }
         cl.addView(progressBar)
-        root.addView(cl)
         return root
     }
 
@@ -217,8 +223,9 @@ class LoginFragment : Fragment() {
     }
 
     private fun navigateToWarmup() {
+        val containerId = (view?.parent as? View)?.id ?: AndroidR.id.content
         parentFragmentManager.beginTransaction()
-            .replace(android.R.id.content, WarmupFragment())
+            .replace(containerId, WarmupFragment())
             .commit()
     }
 

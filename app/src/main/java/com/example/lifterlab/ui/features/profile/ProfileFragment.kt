@@ -1,5 +1,6 @@
 package com.example.lifterlab.ui.features.profile
 
+import android.R as AndroidR
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
@@ -26,7 +27,6 @@ import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
-import java.math.BigDecimal
 
 data class ProfileState(
     var name: String = "",
@@ -61,14 +61,15 @@ class ProfileFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val root = ScrollView(requireContext()).apply {
-            setFillViewport(true)
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            isFillViewport = true
+            layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
             setBackgroundColor(BG_BACKGROUND)
         }
         val cl = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
         }
+        root.addView(cl)
 
         cl.addView(View(requireContext()).apply {
             setBackgroundColor(BG_BACKGROUND)
@@ -332,8 +333,6 @@ class ProfileFragment : Fragment() {
         }
         btnSignOut.setOnClickListener { signOut() }
         cl.addView(btnSignOut)
-
-        root.addView(cl)
         return root
     }
 
@@ -402,8 +401,9 @@ class ProfileFragment : Fragment() {
 
     private fun signOut() {
         repository.signOut()
+        val containerId = (view?.parent as? View)?.id ?: AndroidR.id.content
         parentFragmentManager.beginTransaction()
-            .replace(android.R.id.content, LoginFragment())
+            .replace(containerId, LoginFragment())
             .commit()
     }
 
@@ -428,26 +428,25 @@ class ProfileFragment : Fragment() {
             etBarWeight.setText(if (state.baseBarWeightKg >= 0.0)
                 state.baseBarWeightKg.toBigDecimal().stripTrailingZeros().toPlainString() else "")
         }
-if (state.errorMessage != null) {
+        if (state.errorMessage != null) {
             val msg = state.errorMessage
-            requireView().toast(msg!!)
             state.errorMessage = null
-            renderState()
+            requireView().toast(msg!!)
         }
         if (state.isSavedSuccessfully) {
             requireView().toast("Perfil actualizado correctamente ✓")
             state.isSavedSuccessfully = false
-            renderState()
         }
     }
 
     private fun showOptionsMenu() {
+        val containerId = (view?.parent as? View)?.id ?: AndroidR.id.content
         AlertDialog.Builder(requireContext())
             .setItems(arrayOf("Ver Perfil", "Warmup", "Cerrar Sesión")) { _, which ->
                 when (which) {
                     0 -> {}
                     1 -> parentFragmentManager.beginTransaction()
-                        .replace(android.R.id.content, WarmupFragment())
+                        .replace(containerId, WarmupFragment())
                         .commit()
                     2 -> signOut()
                 }

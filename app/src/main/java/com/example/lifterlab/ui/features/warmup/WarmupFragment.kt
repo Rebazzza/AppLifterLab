@@ -1,32 +1,32 @@
 package com.example.lifterlab.ui.features.warmup
 
+import android.R as AndroidR
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.text.InputType
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.*
-import android.content.res.ColorStateList
-import android.view.Gravity
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import com.example.lifterlab.*
 import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.RoutineExercise
 import com.example.lifterlab.data.model.WorkoutSession
-import com.example.lifterlab.ui.features.profile.ProfileFragment
-import com.example.lifterlab.ui.features.auth.LoginFragment
-import com.example.lifterlab.toast
 import com.example.lifterlab.data.repository.WarmupRepository
-import com.google.firebase.Timestamp
-import com.google.firebase.auth.FirebaseAuth
+import com.example.lifterlab.ui.features.auth.LoginFragment
+import com.example.lifterlab.ui.features.profile.ProfileFragment
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.google.android.material.card.MaterialCardView
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import kotlin.math.round
 
@@ -58,15 +58,16 @@ class WarmupFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val root = ScrollView(requireContext()).apply {
-            setFillViewport(true)
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            isFillViewport = true
+            layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
             setBackgroundColor(BG_BACKGROUND)
         }
         val cl = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             setPaddingH(dp(16f), dp(16f))
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
         }
+        root.addView(cl)
 
         val badge = TextView(requireContext()).apply {
             text = "LIFTERLAB • TITANIO Y ACERO"
@@ -128,6 +129,7 @@ class WarmupFragment : Fragment() {
         })
 
         val tilName = TextInputLayout(requireContext()).apply {
+            hint = "Nombre del Ejercicio"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -149,6 +151,7 @@ class WarmupFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
         }
         val tilWeight = TextInputLayout(requireContext()).apply {
+            hint = "Peso (kg)"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -165,6 +168,7 @@ class WarmupFragment : Fragment() {
         row1.addView(tilWeight)
 
         val tilReps = TextInputLayout(requireContext()).apply {
+            hint = "Repeticiones"
             setBackgroundColor(BG_SURFACE_CONTAINER)
             boxStrokeColor = PRIMARY_ACCENT
             hintTextColor = ColorStateList.valueOf(TEXT_ON_SURFACE_VARIANT)
@@ -280,12 +284,16 @@ class WarmupFragment : Fragment() {
             indeterminateTintList = ColorStateList.valueOf(PRIMARY_ACCENT)
             layoutParams = LinearLayout.LayoutParams(dp(48f), dp(48f))
         }
-        root.addView(progressBar)
-        root.addView(cl)
+        cl.addView(progressBar)
+
         return root
     }
 
     private fun calculate1RM() {
+        state.weight = etWeight.text?.toString()?.trim() ?: ""
+        state.reps = etReps.text?.toString()?.trim() ?: ""
+        state.exerciseName = etExerciseName.text?.toString()?.trim() ?: "Generic Exercise"
+
         val weight = state.weight.toDoubleOrNull()
         val reps = state.reps.toIntOrNull()
         if (weight == null || reps == null || weight <= 0 || reps <= 0) {
@@ -299,7 +307,7 @@ class WarmupFragment : Fragment() {
             renderState()
             return
         }
-        val estimated1RM = round(weight / divisor * 10) / 10.0
+        val estimated1RM = round((weight / divisor) * 10) / 10.0
         state.estimated1RM = estimated1RM
         state.percentages = listOf(70, 75, 80, 85, 90, 95).map { p ->
             Pair(p, round((estimated1RM * (p / 100.0)) * 10) / 10.0)
@@ -309,6 +317,10 @@ class WarmupFragment : Fragment() {
     }
 
     private fun saveSession(userId: String) {
+        state.weight = etWeight.text?.toString()?.trim() ?: ""
+        state.reps = etReps.text?.toString()?.trim() ?: ""
+        state.exerciseName = etExerciseName.text?.toString()?.trim() ?: "Generic Exercise"
+
         val weight = state.weight.toDoubleOrNull()
         val reps = state.reps.toIntOrNull()
         val estimated1RM = state.estimated1RM
@@ -326,10 +338,12 @@ class WarmupFragment : Fragment() {
                 routineName = "Sesión Libre de Aproximación",
                 totalVolumeKg = weight * reps,
                 isFreeSession = true,
-                exercises = listOf(RoutineExercise(
-                    name = state.exerciseName.ifBlank { "Generic Exercise" },
-                    sets = listOf(ExerciseSet(weightKg = weight, reps = reps, est1RM = estimated1RM, isPR = false))
-                ))
+                exercises = listOf(
+                    RoutineExercise(
+                        name = state.exerciseName.ifBlank { "Generic Exercise" },
+                        sets = listOf(ExerciseSet(weightKg = weight, reps = reps, est1RM = estimated1RM, isPR = false))
+                    )
+                )
             )
             repository.saveWorkoutSession(userId, session).onSuccess {
                 state.isLoading = false
@@ -354,11 +368,10 @@ class WarmupFragment : Fragment() {
             tv1RMResult.text = "-- kg"
             llPercentagesContainer.removeAllViews()
         }
-if (state.errorMessage != null) {
+        if (state.errorMessage != null) {
             val msg = state.errorMessage
-            requireView().toast(msg!!)
             state.errorMessage = null
-            renderState()
+            requireView().toast(msg!!)
         }
         if (state.isSavedSuccessfully) {
             requireView().toast("Sesión guardada exitosamente")
@@ -435,21 +448,22 @@ if (state.errorMessage != null) {
     }
 
     private fun showOptionsMenu() {
+        val containerId = (view?.parent as? View)?.id ?: AndroidR.id.content
         AlertDialog.Builder(requireContext())
             .setItems(arrayOf("Ver Perfil", "Warmup", "Cerrar Sesión")) { _, which ->
                 when (which) {
-                    0 -> {}
-                    1 -> parentFragmentManager.beginTransaction()
-                        .replace(android.R.id.content, ProfileFragment())
+                    0 -> parentFragmentManager.beginTransaction()
+                        .replace(containerId, ProfileFragment())
+                        .addToBackStack(null)
                         .commit()
+                    1 -> {}
                     2 -> {
                         FirebaseAuth.getInstance().signOut()
                         parentFragmentManager.beginTransaction()
-                            .replace(android.R.id.content, LoginFragment())
+                            .replace(containerId, LoginFragment())
                             .commit()
                     }
                 }
             }.show()
     }
 }
-

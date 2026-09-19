@@ -1,6 +1,7 @@
 package com.example.lifterlab
 
 import android.os.Bundle
+import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -15,11 +16,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val container = FrameLayout(this)
-        container.layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        val container = FrameLayout(this).apply {
+            id = View.generateViewId()
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
         setContentView(container)
 
         ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
@@ -28,14 +31,16 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        if (FirebaseAuth.getInstance().currentUser == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(android.R.id.content, LoginFragment())
-                .commit()
-        } else {
-            supportFragmentManager.beginTransaction()
-                .replace(android.R.id.content, WarmupFragment())
-                .commit()
+        if (savedInstanceState == null) {
+            if (FirebaseAuth.getInstance().currentUser == null) {
+                supportFragmentManager.beginTransaction()
+                    .replace(container.id, LoginFragment())
+                    .commit()
+            } else {
+                supportFragmentManager.beginTransaction()
+                    .replace(container.id, WarmupFragment())
+                    .commit()
+            }
         }
     }
 }

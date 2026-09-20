@@ -1,7 +1,10 @@
 package com.example.lifterlab
 
+<<<<<<< HEAD
 import android.content.res.ColorStateList
 import android.content.res.Resources
+=======
+>>>>>>> 8f4969e823aa71bab509391fe5a93bdc2031f543
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable

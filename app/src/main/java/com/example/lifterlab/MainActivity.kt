@@ -1,7 +1,10 @@
 package com.example.lifterlab
 
 import android.os.Bundle
+<<<<<<< HEAD
 import android.view.Gravity
+=======
+>>>>>>> 8f4969e823aa71bab509391fe5a93bdc2031f543
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
@@ -27,11 +30,40 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+<<<<<<< HEAD
         val user = authRepository.getCurrentUser()
         if (user != null) {
             showHome(user.email ?: "")
         } else {
             showLogin()
+=======
+
+        val container = FrameLayout(this).apply {
+            id = View.generateViewId()
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        setContentView(container)
+
+        ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        if (savedInstanceState == null) {
+            if (FirebaseAuth.getInstance().currentUser == null) {
+                supportFragmentManager.beginTransaction()
+                    .replace(container.id, LoginFragment())
+                    .commit()
+            } else {
+                supportFragmentManager.beginTransaction()
+                    .replace(container.id, WarmupFragment())
+                    .commit()
+            }
+>>>>>>> 8f4969e823aa71bab509391fe5a93bdc2031f543
         }
     }
 

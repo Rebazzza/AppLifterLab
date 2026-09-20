@@ -1,74 +1,73 @@
-# Skill: Generador de Módulos de Pantalla (Feature Generator)
+# Skill: Generador de Vistas Simples en Kotlin
 
 ## Propósito
-Esta skill define la estructura estándar para construir cualquier nuevo módulo o pantalla dentro de LifterLab, asegurando que se cumpla la arquitectura MVVM, ViewBinding, Kotlin Coroutines y la integración con Firebase Firestore descrita en `agent.md`.
+Definir la estructura mínima y directa para crear pantallas en LifterLab escribiendo únicamente código en Kotlin nativo, sin usar XML, ViewBinding ni ViewModels.
 
 ---
 
 ## Instrucciones para el Agente de IA
 
-Cuando se te solicite implementar un Requerimiento Funcional (ej. "Implementa el RF08: Series de aproximación"), debes generar los siguientes 4 archivos manteniendo la siguiente convención de nombres y responsabilidad:
+Cuando se solicite implementar una pantalla o función (ej. "Implementa el RF08: Series de aproximación"), genera **un único archivo Kotlin** siguiendo esta estructura básica:
 
-### 1. Modelo de Estado de la UI (`UiState`)
-Ubicación: `ui/features/<feature_name>/<Feature>UiState.kt`
-- Debe ser una `sealed interface` o `data class` inmutable que represente todos los estados de la pantalla.
-- Campos obligatorios para carga y error: `isLoading: Boolean = false`, `errorMessage: String? = null`.
+### Ubicación y Nombre
+`ui/features/<Feature>Activity.kt` o `ui/features/<Feature>View.kt`
 
-### 2. ViewModel (`ViewModel`)
-Ubicación: `ui/features/<feature_name>/<Feature>ViewModel.kt`
-- Hereda de `ViewModel()`.
-- Expone el estado a través de un `StateFlow` privado mutable y uno público inmutable (`StateFlow<UiState>`).
-- Maneja la lógica de negocio y llamadas al repositorio mediante `viewModelScope.launch`.
-
-### 3. Repositorio / Servicio de Firestore (`Repository`)
-Ubicación: `data/repository/<Feature>Repository.kt`
-- Realiza consultas asíncronas a Cloud Firestore usando `suspend` y `await()`.
-- Todas las rutas de Firestore DEBEN construirse a partir de la raíz `/users/{userId}/...` para respetar la regla de aislamiento del usuario (`request.auth.uid == userId`).
-- Retorna siempre un tipo `Result<T>` (`Result.success` o `Result.failure`).
-
-### 4. Layout XML y Fragment (`Fragment` + `XML`)
-Ubicación: `ui/features/<feature_name>/<Feature>Fragment.kt` y `res/layout/fragment_<feature_name>.xml`
-- El XML debe usar `ConstraintLayout` y componentes de Material Design 3.
-- El Fragment debe implementar `ViewBinding` asignando la variable en `onCreateView` y nulleándola en `onDestroyView()`.
-- Debe suscribirse al `StateFlow` del ViewModel dentro de un bloque `viewLifecycleOwner.lifecycleScope.launch`.
+### Reglas de Diseño y Código
+- **Sin XML ni ViewBinding:** Toda la interfaz se crea mediante código Kotlin usando vistas simples (`LinearLayout`, `TextView`, `Button`, `EditText`).
+- **Sin ViewModel:** La lógica y el manejo de datos ocurren directamente en la clase/Activity.
+- **Sin Repositorio separado:** Las llamadas a Firebase Firestore se hacen directamente en el archivo Kotlin usando funciones `suspend` o listeners básicos.
+- **Estilo simple:** Usa parámetros básicos de Kotlin para layout (`layoutParams`), colores simples e inputs directos.
 
 ---
 
 ## Plantilla de Código Base a seguir por el Agente
 
 ```kotlin
-// Ej. Plantilla de Fragment con ViewBinding y StateFlow
-class FeatureFragment : Fragment() {
+class FeatureActivity : AppCompatActivity() {
 
-    private var _binding: FragmentFeatureBinding? = null
-    private val binding get() = _binding!!
-    private val viewModel: FeatureViewModel by viewModels()
+    private val db = FirebaseFirestore.getInstance()
+    private val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentFeatureBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    override fun onViewCreated(view: View, savedInstanceState: Array<out Any>?) {
-        super.onViewCreated(view, savedInstanceState)
-        observeUiState()
-    }
+        // Contenedor principal vertical simple
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
+        }
 
-    private fun observeUiState() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    // Actualizar vistas mediante binding
-                }
+        // Título de la pantalla
+        val title = TextView(this).apply {
+            text = "Nombre de la Pantalla"
+            textSize = 20f
+        }
+
+        // Campo de entrada básico
+        val input = EditText(this).apply {
+            hint = "Ingrese un valor"
+        }
+
+        // Botón de acción directo con consulta a Firestore
+        val button = Button(this).apply {
+            text = "Guardar"
+            setOnClickListener {
+                val data = hashMapOf("valor" to input.text.toString())
+                
+                // Guardar directo en Firestore bajo /users/{userId}/...
+                db.collection("users").document(userId)
+                    .collection("datos").add(data)
+                    .addOnSuccessListener {
+                        Toast.makeText(context, "Guardado con éxito", Toast.LENGTH_SHORT).show()
+                    }
             }
         }
-    }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        // Agregar elementos al layout y mostrar
+        layout.addView(title)
+        layout.addView(input)
+        layout.addView(button)
+
+        setContentView(layout)
     }
 }

@@ -7,10 +7,7 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
-import com.example.lifterlab.BG_BACKGROUND
-import com.example.lifterlab.ERROR_ACCENT
 import com.example.lifterlab.TEXT_ON_BACKGROUND
 import com.example.lifterlab.TEXT_ON_SURFACE_VARIANT
 import com.example.lifterlab.bgSurfaceCard
@@ -26,11 +23,9 @@ import com.example.lifterlab.setTextSizeSp
 import com.example.lifterlab.setTypefaceMedium
 import com.example.lifterlab.textField
 import com.example.lifterlab.toast
+import com.example.lifterlab.ui.FormView
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -40,9 +35,7 @@ class ProfileView(
     private val onSignOut: () -> Unit,
     private val authRepository: AuthRepository = AuthRepository(),
     private val profileRepository: ProfileRepository = ProfileRepository()
-) : LinearLayout(context) {
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+) : FormView(context) {
 
     private val userId: String = authRepository.getCurrentUser()?.uid.orEmpty()
     private val email: String = authRepository.getCurrentUser()?.email.orEmpty()
@@ -67,11 +60,6 @@ class ProfileView(
         InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
     ).apply { typeface = Typeface.MONOSPACE }
 
-    private val errorText: TextView = TextView(context).apply {
-        setTextColor(ERROR_ACCENT)
-        setTextSizeSp(14f)
-        visibility = GONE
-    }
     private val loadingText: TextView = TextView(context).apply {
         text = "Cargando perfil..."
         setTextColor(TEXT_ON_SURFACE_VARIANT)
@@ -164,16 +152,7 @@ class ProfileView(
     }
 
     init {
-        orientation = LinearLayout.VERTICAL
-        setBackgroundColor(BG_BACKGROUND)
-
-        val scroll = ScrollView(context).apply {
-            isFillViewport = true
-            isVerticalScrollBarEnabled = false
-            addView(content)
-        }
-        addView(scroll, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-
+        scrollContent(content)
         loadProfile()
     }
 
@@ -233,7 +212,7 @@ class ProfileView(
                 .onSuccess {
                     setSaving(false)
                     errorText.visibility = GONE
-                    toast("Perfil actualizado")
+                    context.toast("Perfil actualizado")
                 }
                 .onFailure { e ->
                     setSaving(false)
@@ -242,18 +221,8 @@ class ProfileView(
         }
     }
 
-    private fun showError(message: String) {
-        errorText.text = message
-        errorText.visibility = VISIBLE
-    }
-
     private fun setSaving(saving: Boolean) {
         saveButton.isEnabled = !saving
         saveButton.text = if (saving) "Guardando..." else "Guardar Cambios"
-    }
-
-    override fun onDetachedFromWindow() {
-        scope.cancel()
-        super.onDetachedFromWindow()
     }
 }

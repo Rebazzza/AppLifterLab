@@ -1,25 +1,12 @@
 package com.example.lifterlab
 
 import android.os.Bundle
-<<<<<<< HEAD
 import android.view.Gravity
-=======
->>>>>>> 8f4969e823aa71bab509391fe5a93bdc2031f543
-import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.lifterlab.BG_BACKGROUND
-import com.example.lifterlab.TEXT_ON_BACKGROUND
-import com.example.lifterlab.TEXT_ON_SURFACE_VARIANT
-import com.example.lifterlab.bgSurfaceCard
 import com.example.lifterlab.data.repository.AuthRepository
-import com.example.lifterlab.dp
-import com.example.lifterlab.primaryButton
-import com.example.lifterlab.secondaryButton
-import com.example.lifterlab.setTextSizeSp
-import com.example.lifterlab.setTypefaceMedium
 import com.example.lifterlab.ui.features.auth.LoginView
 import com.example.lifterlab.ui.features.auth.RegisterView
 import com.example.lifterlab.ui.features.profile.ProfileView
@@ -30,49 +17,20 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-<<<<<<< HEAD
         val user = authRepository.getCurrentUser()
         if (user != null) {
             showHome(user.email ?: "")
         } else {
             showLogin()
-=======
-
-        val container = FrameLayout(this).apply {
-            id = View.generateViewId()
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        setContentView(container)
-
-        ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-        if (savedInstanceState == null) {
-            if (FirebaseAuth.getInstance().currentUser == null) {
-                supportFragmentManager.beginTransaction()
-                    .replace(container.id, LoginFragment())
-                    .commit()
-            } else {
-                supportFragmentManager.beginTransaction()
-                    .replace(container.id, WarmupFragment())
-                    .commit()
-            }
->>>>>>> 8f4969e823aa71bab509391fe5a93bdc2031f543
         }
     }
 
     private fun showLogin() {
         setContentView(
             LoginView(
-                this,
-                onNavigateToRegister = { showRegister() },
-                onLoginSuccess = { email -> showHome(email) }
+                context = this,
+                onNavigateToRegister = ::showRegister,
+                onLoginSuccess = ::showHome
             )
         )
     }
@@ -80,23 +38,74 @@ class MainActivity : AppCompatActivity() {
     private fun showRegister() {
         setContentView(
             RegisterView(
-                this,
-                onNavigateToLogin = { showLogin() },
-                onRegisterSuccess = { email -> showHome(email) }
+                context = this,
+                onNavigateToLogin = ::showLogin,
+                onRegisterSuccess = ::showHome
             )
         )
     }
 
     private fun showHome(email: String) {
-        setContentView(homeView(email))
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(BG_BACKGROUND)
+            setPadding(dp(20), dp(48), dp(20), dp(16))
+        }
+
+        root.addView(TextView(this).apply {
+            text = "LifterLab"
+            setTextColor(TEXT_ON_BACKGROUND)
+            setTextSizeSp(28f)
+            setTypefaceMedium()
+        })
+
+        root.addView(TextView(this).apply {
+            text = "Bienvenido, $email"
+            textSize = 22f
+            setTextColor(TEXT_ON_BACKGROUND)
+            setPadding(0, dp(8), 0, 0)
+        })
+
+        root.addView(TextView(this).apply {
+            text = "Tu plataforma para planificar, registrar y analizar tus entrenamientos."
+            textSize = 14f
+            setTextColor(TEXT_ON_SURFACE_VARIANT)
+            setPadding(0, dp(4), 0, dp(20))
+        })
+
+        val btnVerPerfil = primaryButton("Ver Perfil")
+        btnVerPerfil.setOnClickListener { showProfile() }
+        root.addView(btnVerPerfil, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(52)
+        ))
+
+        val btnCerrarSesion = secondaryButton("Cerrar Sesión")
+        btnCerrarSesion.setOnClickListener {
+            authRepository.signOut()
+            showLogin()
+        }
+        root.addView(btnCerrarSesion, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dp(52)
+        ).apply { topMargin = dp(12) })
+
+        root.addView(TextView(this).apply {
+            text = "Recuerda que llevar una buena alimentación e hidratación es tan importante como el entrenamiento."
+            textSize = 13f
+            setTextColor(TEXT_ON_SURFACE_VARIANT)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(24), 0, 0)
+        })
+
+        setContentView(root)
     }
 
     private fun showProfile() {
-        val email = authRepository.getCurrentUser()?.email ?: ""
         setContentView(
             ProfileView(
-                this,
-                onBack = { showHome(email) },
+                context = this,
+                onBack = ::showHomeBackPress,
                 onSignOut = {
                     authRepository.signOut()
                     showLogin()
@@ -105,63 +114,12 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun homeView(email: String): View = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setBackgroundColor(BG_BACKGROUND)
-        setPadding(dp(32), dp(48), dp(32), dp(24))
-
-        addView(TextView(this@MainActivity).apply {
-            text = "LifterLab"
-            setTextColor(TEXT_ON_BACKGROUND)
-            setTextSizeSp(30f)
-            setTypefaceMedium()
-            gravity = Gravity.CENTER
-        })
-
-        addView(TextView(this@MainActivity).apply {
-            text = "Bienvenido a tu entrenamiento"
-            setTextColor(TEXT_ON_SURFACE_VARIANT)
-            setTextSizeSp(15f)
-            gravity = Gravity.CENTER
-            setPadding(0, dp(8), 0, dp(48))
-        })
-
-        val card = LinearLayout(this@MainActivity).apply {
-            orientation = LinearLayout.VERTICAL
-            background = bgSurfaceCard()
-            setPadding(dp(24), dp(24), dp(24), dp(24))
-            addView(TextView(this@MainActivity).apply {
-                text = "Sesión iniciada como:"
-                setTextColor(TEXT_ON_SURFACE_VARIANT)
-                setTextSizeSp(13f)
-            })
-            addView(TextView(this@MainActivity).apply {
-                text = email
-                setTextColor(TEXT_ON_BACKGROUND)
-                setTextSizeSp(18f)
-                setTypefaceMedium()
-                setPadding(0, dp(4), 0, 0)
-            })
+    private fun showHomeBackPress() {
+        val user = authRepository.getCurrentUser()
+        if (user != null) {
+            showHome(user.email ?: "")
+        } else {
+            showLogin()
         }
-        addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-
-        val profileButton = primaryButton("Ver Perfil").apply {
-            setOnClickListener { showProfile() }
-        }
-        addView(
-            profileButton,
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)).apply { topMargin = dp(20) }
-        )
-
-        val signOutButton = secondaryButton("Cerrar Sesión").apply {
-            setOnClickListener {
-                authRepository.signOut()
-                showLogin()
-            }
-        }
-        addView(
-            signOutButton,
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)).apply { topMargin = dp(12) }
-        )
     }
 }

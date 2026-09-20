@@ -7,10 +7,7 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
-import com.example.lifterlab.BG_BACKGROUND
-import com.example.lifterlab.ERROR_ACCENT
 import com.example.lifterlab.PRIMARY_ACCENT
 import com.example.lifterlab.TEXT_ON_BACKGROUND
 import com.example.lifterlab.TEXT_ON_SURFACE_VARIANT
@@ -19,19 +16,17 @@ import com.example.lifterlab.data.model.UserProfile
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.dp
 import com.example.lifterlab.fieldLabel
-import com.example.lifterlab.primaryButton
 import com.example.lifterlab.passwordToggleField
+import com.example.lifterlab.primaryButton
 import com.example.lifterlab.setMargins
 import com.example.lifterlab.setTextSizeSp
 import com.example.lifterlab.setTypefaceMedium
 import com.example.lifterlab.textField
 import com.example.lifterlab.toast
+import com.example.lifterlab.ui.FormView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputLayout
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -40,9 +35,7 @@ class RegisterView(
     private val onNavigateToLogin: () -> Unit,
     private val onRegisterSuccess: (String) -> Unit,
     private val authRepository: AuthRepository = AuthRepository()
-) : LinearLayout(context) {
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+) : FormView(context) {
 
     private val nameInput: EditText = context.textField(
         "Tu nombre",
@@ -69,11 +62,6 @@ class RegisterView(
         "Peso actual en kg (Ej. 80)",
         InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
     ).apply { typeface = Typeface.MONOSPACE }
-    private val errorText: TextView = TextView(context).apply {
-        setTextColor(ERROR_ACCENT)
-        setTextSizeSp(14f)
-        visibility = GONE
-    }
     private val registerButton: MaterialButton = context.primaryButton("Crear Cuenta")
 
     private val content: LinearLayout = LinearLayout(context).apply {
@@ -134,15 +122,7 @@ class RegisterView(
     }
 
     init {
-        orientation = LinearLayout.VERTICAL
-        setBackgroundColor(BG_BACKGROUND)
-
-        val scroll = ScrollView(context).apply {
-            isFillViewport = true
-            isVerticalScrollBarEnabled = false
-            addView(content)
-        }
-        addView(scroll, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        scrollContent(content)
     }
 
     private fun LinearLayout.addField(label: String, input: EditText, topGap: Int = 16) {
@@ -178,7 +158,7 @@ class RegisterView(
             val result = withContext(Dispatchers.IO) { authRepository.register(email, pass, profile) }
             result
                 .onSuccess { user ->
-                    toast("¡Cuenta creada!")
+                    context.toast("¡Cuenta creada!")
                     onRegisterSuccess(user.email ?: email)
                 }
                 .onFailure { e ->
@@ -188,18 +168,8 @@ class RegisterView(
         }
     }
 
-    private fun showError(message: String) {
-        errorText.text = message
-        errorText.visibility = VISIBLE
-    }
-
     private fun setLoading(loading: Boolean) {
         registerButton.isEnabled = !loading
         registerButton.text = if (loading) "Creando cuenta..." else "Crear Cuenta"
-    }
-
-    override fun onDetachedFromWindow() {
-        scope.cancel()
-        super.onDetachedFromWindow()
     }
 }

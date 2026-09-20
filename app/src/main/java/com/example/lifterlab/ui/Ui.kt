@@ -1,5 +1,6 @@
 package com.example.lifterlab
 
+import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.Color
@@ -14,15 +15,18 @@ import android.widget.TextView
 import android.widget.Toast
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.shape.CornerFamily
-import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 
 const val BG_BACKGROUND = 0xFF131315.toInt()
+const val BG_OBSIDIAN = 0xFF09090B.toInt()
 const val BG_SURFACE_CONTAINER_LOW = 0xFF1C1B1D.toInt()
 const val BG_SURFACE_CONTAINER_HIGH = 0xFF2A2A2C.toInt()
 const val OUTLINE_VARIANT = 0xFF464554.toInt()
 const val PRIMARY_ACCENT = 0xFF6567E3.toInt()
+const val PRIMARY_CONTAINER = 0xFF8083FF.toInt()
+const val SECONDARY_ACCENT = 0xFFFFB77D.toInt()
+const val TERTIARY_ACCENT = 0xFF4EDEA3.toInt()
 const val ERROR_ACCENT = 0xFFFFB4AB.toInt()
 const val TEXT_ON_BACKGROUND = 0xFFE5E1E4.toInt()
 const val TEXT_ON_SURFACE_VARIANT = 0xFFC7C4D7.toInt()
@@ -44,6 +48,20 @@ fun bgTextField(): GradientDrawable = GradientDrawable().apply {
     setStroke(1, OUTLINE_VARIANT)
 }
 
+fun bgTagChip(backgroundColor: Int = BG_SURFACE_CONTAINER_HIGH, strokeColor: Int = OUTLINE_VARIANT): GradientDrawable = GradientDrawable().apply {
+    shape = GradientDrawable.RECTANGLE
+    setColor(backgroundColor)
+    cornerRadius = 16f
+    setStroke(1, strokeColor)
+}
+
+fun bgPercentBadge(): GradientDrawable = GradientDrawable().apply {
+    shape = GradientDrawable.RECTANGLE
+    setColor(BG_SURFACE_CONTAINER_HIGH)
+    cornerRadius = 6f
+    setStroke(1, OUTLINE_VARIANT)
+}
+
 fun TextView.setTextSizeSp(sizeSp: Float) {
     setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp)
 }
@@ -62,14 +80,14 @@ fun View.setMargins(startDp: Int = 0, topDp: Int = 0, endDp: Int = 0, bottomDp: 
     layoutParams = lp
 }
 
-fun android.content.Context.fieldLabel(text: String): TextView = TextView(this).apply {
+fun Context.fieldLabel(text: String): TextView = TextView(this).apply {
     this.text = text
     setTextColor(TEXT_ON_SURFACE_VARIANT)
     setTextSizeSp(13f)
     setTypefaceMedium()
 }
 
-fun android.content.Context.textField(
+fun Context.textField(
     hint: String,
     inputType: Int = InputType.TYPE_CLASS_TEXT
 ): EditText = EditText(this).apply {
@@ -83,7 +101,7 @@ fun android.content.Context.textField(
     setSingleLine(true)
 }
 
-fun android.content.Context.passwordToggleField(hint: String): TextInputLayout {
+fun Context.passwordToggleField(hint: String): TextInputLayout {
     val editText = TextInputEditText(this).apply {
         setTextColor(TEXT_ON_BACKGROUND)
         setHintTextColor(TEXT_ON_SURFACE_VARIANT)
@@ -107,7 +125,7 @@ fun android.content.Context.passwordToggleField(hint: String): TextInputLayout {
     }
 }
 
-fun android.content.Context.primaryButton(text: String): MaterialButton = MaterialButton(this).apply {
+fun Context.primaryButton(text: String): MaterialButton = MaterialButton(this).apply {
     this.text = text
     textSize = 16f
     isAllCaps = false
@@ -116,7 +134,7 @@ fun android.content.Context.primaryButton(text: String): MaterialButton = Materi
     setTextColor(Color.WHITE)
 }
 
-fun android.content.Context.secondaryButton(text: String): MaterialButton = MaterialButton(this).apply {
+fun Context.secondaryButton(text: String): MaterialButton = MaterialButton(this).apply {
     this.text = text
     textSize = 15f
     isAllCaps = false
@@ -127,6 +145,6 @@ fun android.content.Context.secondaryButton(text: String): MaterialButton = Mate
     setTextColor(TEXT_ON_SURFACE_VARIANT)
 }
 
-fun android.content.Context.toast(message: String) {
+fun Context.toast(message: String) {
     Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 }

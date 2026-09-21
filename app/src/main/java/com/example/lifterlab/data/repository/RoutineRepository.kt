@@ -46,6 +46,7 @@ class RoutineRepository(
                 routinesRef.document(routine.id)
             }
 
+
             val routineToSave = routine.copy(id = docRef.id)
             docRef.set(routineToSave).await()
             Result.success(docRef.id)

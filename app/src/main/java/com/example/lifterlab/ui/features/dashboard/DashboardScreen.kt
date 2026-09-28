@@ -13,10 +13,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,7 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,11 +73,15 @@ fun DashboardScreen(
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(top = 16.dp)
+                .padding(bottom = 96.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -82,9 +98,10 @@ fun DashboardScreen(
                     )
                 }
 
-                Text(
-                    text = "👤",
-                    fontSize = 20.sp,
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = "Perfil",
+                    tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -129,8 +146,20 @@ fun DashboardScreen(
             LastSessionCard(onNavigateToRoutines = onNavigateToRoutines)
 
             AlertBanner()
+        }
 
-            BottomNavBar(onNavigateToRoutines = onNavigateToRoutines, onNavigateToProfile = onNavigateToProfile)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp)
+        ) {
+            BottomNavBar(
+                onNavigateToRoutines = onNavigateToRoutines,
+                onNavigateToProfile = onNavigateToProfile
+            )
+        }
         }
     }
 }
@@ -321,7 +350,7 @@ private fun DayRow(activeFlags: List<Boolean>, dayLabels: List<String>) {
 }
 
 @Composable
-private fun StatBox(icon: String, label: String, value: String) {
+private fun StatBox(icon: ImageVector, label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -333,7 +362,14 @@ private fun StatBox(icon: String, label: String, value: String) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 22.sp, modifier = Modifier.padding(end = 12.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier
+                .size(22.dp)
+                .padding(end = 12.dp)
+        )
         Column {
             CardCaption(label)
             Text(
@@ -364,9 +400,9 @@ private fun LastSessionCard(onNavigateToRoutines: () -> Unit) {
         }
 
         Spacer(Modifier.height(12.dp))
-        StatBox("🏋", "TOTAL VOLUME", "12,450 kg")
+        StatBox(Icons.Filled.FitnessCenter, "TOTAL VOLUME", "12,450 kg")
         Spacer(Modifier.height(8.dp))
-        StatBox("⏱", "DURATION", "94 min")
+        StatBox(Icons.Filled.Schedule, "DURATION", "94 min")
 
         Spacer(Modifier.height(14.dp))
         SecondaryButton(
@@ -391,7 +427,14 @@ private fun AlertBanner() {
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("⚠️", fontSize = 20.sp, modifier = Modifier.padding(end = 12.dp))
+        Icon(
+            imageVector = Icons.Filled.Warning,
+            contentDescription = "Alerta",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .size(20.dp)
+                .padding(end = 12.dp)
+        )
         Column {
             Text(
                 text = "Heavy Squat Day Tomorrow",
@@ -413,24 +456,26 @@ private fun BottomNavBar(onNavigateToRoutines: () -> Unit, onNavigateToProfile: 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 20.dp)
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(22.dp), clip = false)
             .background(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(CardCornerRadiusForNav())
+                shape = RoundedCornerShape(22.dp)
+            )
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                RoundedCornerShape(22.dp)
             )
             .padding(10.dp),
         horizontalArrangement = Arrangement.Center
     ) {
-        NavItem("Home", "🏠", isActive = true, onClick = {})
-        NavItem("Routines", "🏋", isActive = false, onClick = onNavigateToRoutines)
-        NavItem("Profile", "👤", isActive = false, onClick = onNavigateToProfile)
+        NavItem("Inicio", Icons.Filled.Home, isActive = true, onClick = {})
+        NavItem("Rutinas", Icons.Filled.FitnessCenter, isActive = false, onClick = onNavigateToRoutines)
+        NavItem("Perfil", Icons.Filled.Person, isActive = false, onClick = onNavigateToProfile)
     }
 }
 
-private fun CardCornerRadiusForNav() = 12.dp
-
 @Composable
-private fun RowScope.NavItem(label: String, icon: String, isActive: Boolean, onClick: () -> Unit) {
+private fun RowScope.NavItem(label: String, icon: ImageVector, isActive: Boolean, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .weight(1f)
@@ -438,7 +483,12 @@ private fun RowScope.NavItem(label: String, icon: String, isActive: Boolean, onC
             .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(icon, fontSize = 18.sp)
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
         Text(
             text = label,
             color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,

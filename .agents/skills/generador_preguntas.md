@@ -1,7 +1,11 @@
 # Skill: Generador de Preguntas de Descubrimiento (Project Discovery Skill)
 
 ## Propósito
-Esta skill define el comportamiento del agente para analizar el repositorio (código, archivos XML, configuración de Gradle y reglas de agent.md) y generar un cuestionario directo agrupado por categorías. El objetivo es que el desarrollador o el equipo responda dónde se define cada parte o qué hace cada componente clave del proyecto.
+Esta skill define el comportamiento del agente para analizar el repositorio
+(código, archivos XML, configuración de Gradle y reglas de agent.md) y generar
+un cuestionario directo agrupado por categorías. El objetivo es que el
+desarrollador o el equipo responda dónde se define cada parte o qué hace cada
+componente clave del proyecto.
 
 ---
 

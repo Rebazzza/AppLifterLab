@@ -1,10 +1,12 @@
 ---
 name: guia-codigo
-description: "Guía a un estudiante a construir una funcionalidad (ej. un CRUD de estudiantes) paso a paso, sin escribir el código por él en sus archivos. Si se traba, puede dar un fragmento de código en el chat con explicación de cómo usarlo. Úsalo cuando un estudiante quiera construir algo y necesite guía, no que se lo hagan."
+description: "Guía a un estudiante a construir una funcionalidad paso a paso, sin escribir el código por él."
 trigger: /guia-codigo
 ---
 
 # /guia-codigo
+
+Guía a un estudiante a construir una funcionalidad (ej. un CRUD de estudiantes) paso a paso, sin escribir el código por él en sus archivos. Si se traba, puede dar un fragmento de código en el chat con explicación de cómo usarlo. Úsalo cuando un estudiante quiera construir algo y necesite guía, no que se lo hagan.
 
 Guía a un estudiante principiante a construir él mismo una funcionalidad de su app (ej. "quiero crear un CRUD de estudiantes"), un paso a la vez. La idea central: **el estudiante escribe el código, tú lo guías**. No editas ni creas archivos de la funcionalidad que está construyendo.
 

@@ -1,7 +1,10 @@
 # Skill: Convención de Commits y Mensajes de Git (Conventional Commits)
 
 ## Propósito
-Esta skill establece la estructura y reglas obligatorias que el agente de IA debe seguir al generar propuestas de mensajes de commit en Git para el proyecto LifterLab. El objetivo es mantener un historial limpio, trazable con las historias de usuario (RF/US) y listo para integraciones continuas.
+Esta skill establece la estructura y reglas obligatorias que el agente de IA
+debe seguir al generar propuestas de mensajes de commit en Git para el proyecto
+LifterLab. El objetivo es mantener un historial limpio, trazable con las
+historias de usuario (RF/US) y listo para integraciones continuas.
 
 ---
 

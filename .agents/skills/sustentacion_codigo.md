@@ -1,10 +1,12 @@
 ---
 name: sustentacion-codigo
-description: "Simula una sustentación oral de código: hace, una a la vez, entre 5 y 10 preguntas que van de lo más sencillo (ubicarse en el código: en qué archivo/línea está tal botón o función) a lo más complejo (comportamiento y líneas puntuales), para verificar que el estudiante entiende su código (posiblemente generado con ayuda de IA) y se puede mover rápido en él. Úsalo cuando un estudiante quiera practicar antes de sustentar, o un profesor quiera evaluar comprensión de código."
+description: "Simula sustentaciones orales de código con preguntas de ubicación y comprensión."
 trigger: /sustentacion
 ---
 
 # /sustentacion
+
+Simula una sustentación oral de código: hace, una a la vez, entre 5 y 10 preguntas que van de lo más sencillo (ubicarse en el código: en qué archivo/línea está tal botón o función) a lo más complejo (comportamiento y líneas puntuales), para verificar que el estudiante entiende su código (posiblemente generado con ayuda de IA) y se puede mover rápido en él. Úsalo cuando un estudiante quiera practicar antes de sustentar, o un profesor quiera evaluar comprensión de código.
 
 Simula la dinámica de sustentación oral que usa el profesor: mostrar un comportamiento observable de la app (o una línea puntual de código) y preguntar "¿por qué pasa esto?" / "¿qué hace esta línea y por qué la agregamos?", esperando que el estudiante responda **con sus propias palabras**, sin jerga técnica innecesaria.
 

@@ -14,15 +14,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -130,7 +139,8 @@ fun RoutinesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 50.dp, vertical = 16.dp)
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(
                 text = "← Volver",
@@ -226,7 +236,16 @@ fun RoutinesScreen(
             }
 
             LifterCard(Modifier.padding(top = 16.dp)) {
-                CardTitle("🔖 Plantillas Guardadas (Saved Templates)")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.Bookmark,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                CardTitle("Plantillas Guardadas (Saved Templates)")
+            }
                 if (savedTemplates.isEmpty()) {
                     Text(
                         text = "No tienes plantillas guardadas aún. Crea una arriba y presiona Guardar.",
@@ -448,11 +467,12 @@ private fun ExerciseCard(
                 )
             }
 
-            Text(
-                text = "🗑",
-                fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.error,
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = "Eliminar ejercicio",
+                tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier
+                    .size(20.dp)
                     .clickable { onDeleteExercise() }
                     .padding(8.dp)
             )
@@ -489,7 +509,7 @@ private fun ExerciseCard(
             minHeight = 42.dp
         )
         SecondaryButton(
-            text = "✓ Completar todos",
+            text = "Completar todos",
             onClick = {
 
             },
@@ -591,14 +611,16 @@ private fun SetRow(
             modifier = Modifier.weight(2f),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = if (completed) "✓" else "○",
-                color = if (completed) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 16.sp,
-                modifier = Modifier.clickable {
-                    completed = !completed
-                    onUpdate(setIndex, null, null, null, completed)
-                }
+            Icon(
+                imageVector = if (completed) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                contentDescription = if (completed) "Completado" else "Pendiente",
+                tint = if (completed) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable {
+                        completed = !completed
+                        onUpdate(setIndex, null, null, null, completed)
+                    }
             )
         }
     }
@@ -673,21 +695,33 @@ private fun TemplateRow(routine: Routine, onLoad: () -> Unit, onDelete: () -> Un
             )
         }
 
-        Text(
-            text = "▶ Cargar",
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clickable { onLoad() }
                 .padding(horizontal = 8.dp, vertical = 6.dp)
-        )
+        ) {
+            Icon(
+                imageVector = Icons.Filled.PlayArrow,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "Cargar",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
 
-        Text(
-            text = "🗑",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.error,
+        Icon(
+            imageVector = Icons.Filled.Delete,
+            contentDescription = "Eliminar plantilla",
+            tint = MaterialTheme.colorScheme.error,
             modifier = Modifier
+                .size(18.dp)
                 .clickable { onDelete() }
                 .padding(horizontal = 8.dp, vertical = 6.dp)
         )

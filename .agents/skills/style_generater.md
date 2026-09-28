@@ -1,7 +1,10 @@
 # Skill: Estilo Visual y Sistema de Diseño UI/UX (UI Style Skill)
 
 ## Propósito
-Esta skill establece los tokens de diseño, paleta de colores, reglas de componentes y guía estérica oficial de la aplicación **LifterLab** ("Titanio y Acero"). El objetivo es garantizar que cualquier vista, layout o componente generado mantenga consistencia gráfica mobile-first e identidad visual.
+Esta skill establece los tokens de diseño, paleta de colores, reglas de
+componentes y guía estérica oficial de la aplicación **LifterLab** ("Titanio y
+Acero"). El objetivo es garantizar que cualquier vista, layout o componente
+generado mantenga consistencia gráfica mobile-first e identidad visual.
 
 ---
 

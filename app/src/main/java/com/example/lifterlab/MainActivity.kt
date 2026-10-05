@@ -2,14 +2,13 @@ package com.example.lifterlab
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.lifterlab.data.repository.AuthRepository
@@ -18,7 +17,8 @@ import com.example.lifterlab.ui.components.LifterTab
 import com.example.lifterlab.ui.features.auth.LoginScreen
 import com.example.lifterlab.ui.features.auth.RegisterScreen
 import com.example.lifterlab.ui.features.dashboard.DashboardScreen
-import com.example.lifterlab.ui.features.profile.ProfileScreen
+import com.example.lifterlab.ui.features.profile.ProfileEditScreen
+import com.example.lifterlab.ui.features.profile.ProfileViewScreen
 import com.example.lifterlab.ui.features.routines.RoutinesScreen
 import com.example.lifterlab.ui.theme.LifterLabTheme
 
@@ -39,23 +39,54 @@ private sealed class AppScreen {
     object Dashboard : AppScreen()
     object Routines : AppScreen()
     object Profile : AppScreen()
+    object ProfileEdit : AppScreen()
 }
 
 @Composable
 private fun AppNavigator() {
     val authRepository = remember { AuthRepository() }
-    var screen by remember {
-        mutableStateOf<AppScreen>(
+
+    // Pila de navegacion: el boton atras nativo retrocede en esta pila.
+    val pila = remember {
+        mutableStateListOf<AppScreen>(
             if (authRepository.isUserLoggedIn()) AppScreen.Dashboard else AppScreen.Login
         )
     }
+    val screen = pila.last()
 
-    // La barra inferior es global: no se oculta al cambiar de módulo.
+    fun navegarA(destino: AppScreen) {
+        if (pila.last() != destino) pila.add(destino)
+    }
+
+    fun irAModulo(destino: AppScreen) {
+        if (pila.last() == destino) return
+        pila.clear()
+        pila.add(destino)
+    }
+
+    fun volverA(destino: AppScreen) {
+        while (pila.size > 1 && pila.last() != destino) pila.removeAt(pila.lastIndex)
+        if (pila.last() != destino) {
+            pila.clear()
+            pila.add(destino)
+        }
+    }
+
+    fun cerrarSesion() {
+        authRepository.signOut()
+        pila.clear()
+        pila.add(AppScreen.Login)
+    }
+
+    // Boton atras nativo: retrocede en la pila; en la raiz, cierra la app.
+    BackHandler(enabled = pila.size > 1) { pila.removeAt(pila.lastIndex) }
+
+    // La barra inferior es global: no se oculta al cambiar de modulo.
     val mostrarBarra = screen !is AppScreen.Login && screen !is AppScreen.Register
     val tabActual: LifterTab? = when (screen) {
         AppScreen.Dashboard -> LifterTab.Inicio
         AppScreen.Routines -> LifterTab.Rutinas
-        AppScreen.Profile -> LifterTab.Perfil
+        AppScreen.Profile, AppScreen.ProfileEdit -> LifterTab.Perfil
         else -> null
     }
 
@@ -66,24 +97,26 @@ private fun AppNavigator() {
         ) {
             when (screen) {
                 AppScreen.Login -> LoginScreen(
-                    onNavigateToRegister = { screen = AppScreen.Register },
-                    onLoginSuccess = { screen = AppScreen.Dashboard }
+                    onNavigateToRegister = { navegarA(AppScreen.Register) },
+                    onLoginSuccess = { irAModulo(AppScreen.Dashboard) }
                 )
                 AppScreen.Register -> RegisterScreen(
-                    onNavigateToLogin = { screen = AppScreen.Login },
-                    onRegisterSuccess = { screen = AppScreen.Dashboard }
+                    onNavigateToLogin = { volverA(AppScreen.Login) },
+                    onRegisterSuccess = { irAModulo(AppScreen.Dashboard) }
                 )
                 AppScreen.Dashboard -> DashboardScreen(
-                    onNavigateToRoutines = { screen = AppScreen.Routines },
-                    onNavigateToProfile = { screen = AppScreen.Profile }
+                    onNavigateToRoutines = { irAModulo(AppScreen.Routines) },
+                    onNavigateToProfile = { irAModulo(AppScreen.Profile) }
                 )
-                AppScreen.Routines -> RoutinesScreen(onBack = { screen = AppScreen.Dashboard })
-                AppScreen.Profile -> ProfileScreen(
-                    onBack = { screen = AppScreen.Dashboard },
-                    onSignOut = {
-                        authRepository.signOut()
-                        screen = AppScreen.Login
-                    }
+                AppScreen.Routines -> RoutinesScreen(
+                    onBack = { irAModulo(AppScreen.Dashboard) }
+                )
+                AppScreen.Profile -> ProfileViewScreen(
+                    onNavigateToEdit = { navegarA(AppScreen.ProfileEdit) },
+                    onSignOut = { cerrarSesion() }
+                )
+                AppScreen.ProfileEdit -> ProfileEditScreen(
+                    onBack = { volverA(AppScreen.Profile) }
                 )
             }
         }
@@ -91,9 +124,9 @@ private fun AppNavigator() {
         if (mostrarBarra) {
             LifterBottomNavBar(
                 currentTab = tabActual,
-                onNavigateToDashboard = { screen = AppScreen.Dashboard },
-                onNavigateToRoutines = { screen = AppScreen.Routines },
-                onNavigateToProfile = { screen = AppScreen.Profile },
+                onNavigateToDashboard = { irAModulo(AppScreen.Dashboard) },
+                onNavigateToRoutines = { irAModulo(AppScreen.Routines) },
+                onNavigateToProfile = { irAModulo(AppScreen.Profile) },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }

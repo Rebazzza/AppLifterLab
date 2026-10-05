@@ -47,16 +47,18 @@ import com.example.lifterlab.data.model.WorkoutSession
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.data.repository.WarmupRepository
+import com.example.lifterlab.ui.calculateGoalPercent
 import com.example.lifterlab.ui.components.CardCaption
 import com.example.lifterlab.ui.components.CardTitle
 import com.example.lifterlab.ui.components.ChippedTag
 import com.example.lifterlab.ui.components.LifterCard
+import com.example.lifterlab.ui.components.SbdStatCard
 import com.example.lifterlab.ui.components.SecondaryButton
 import com.example.lifterlab.ui.components.ScreenTitle
-import com.google.firebase.Timestamp
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import com.example.lifterlab.ui.formatKg
+import com.example.lifterlab.ui.formatSessionDate
+import com.example.lifterlab.ui.formatVolumeKg
+import com.example.lifterlab.ui.progressFraction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -71,7 +73,7 @@ fun DashboardScreen(
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     var profile by remember { mutableStateOf(UserProfile()) }
 
-    // RF04: resumen de la última sesión registrada por el atleta en el historial.
+    // RF04: resumen de la ultima sesion registrada por el atleta en el historial.
     var lastSession by remember { mutableStateOf<WorkoutSession?>(null) }
     var sesionCargada by remember { mutableStateOf(false) }
 
@@ -131,29 +133,32 @@ fun DashboardScreen(
                 )
             }
 
-            SbdCard(
+            SbdStatCard(
                 title = "Squat",
-                badgeText = "↑ +2.5KG",
+                badgeText = "\u2191 +2.5KG",
                 badgeNeutral = false,
                 weightText = formatKg(profile.squat1RM),
                 goalText = calculateGoalPercent(profile.squat1RM, profile.squatGoalKg),
-                fraction = progressFraction(profile.squat1RM, profile.squatGoalKg)
+                fraction = progressFraction(profile.squat1RM, profile.squatGoalKg),
+                modifier = Modifier.padding(top = 16.dp)
             )
-            SbdCard(
+            SbdStatCard(
                 title = "Bench",
                 badgeText = "-",
                 badgeNeutral = true,
                 weightText = formatKg(profile.bench1RM),
                 goalText = calculateGoalPercent(profile.bench1RM, profile.benchGoalKg),
-                fraction = progressFraction(profile.bench1RM, profile.benchGoalKg)
+                fraction = progressFraction(profile.bench1RM, profile.benchGoalKg),
+                modifier = Modifier.padding(top = 16.dp)
             )
-            SbdCard(
+            SbdStatCard(
                 title = "Deadlift",
-                badgeText = "↑ +5.0KG",
+                badgeText = "\u2191 +5.0KG",
                 badgeNeutral = false,
                 weightText = formatKg(profile.deadlift1RM),
                 goalText = calculateGoalPercent(profile.deadlift1RM, profile.deadliftGoalKg),
-                fraction = progressFraction(profile.deadlift1RM, profile.deadliftGoalKg)
+                fraction = progressFraction(profile.deadlift1RM, profile.deadliftGoalKg),
+                modifier = Modifier.padding(top = 16.dp)
             )
 
             ConsistencyCard(streakDays = profile.streakDays)
@@ -166,106 +171,6 @@ fun DashboardScreen(
 
             AlertBanner()
         }
-    }
-}
-
-@Composable
-private fun SbdCard(
-    title: String,
-    badgeText: String,
-    badgeNeutral: Boolean,
-    weightText: String,
-    goalText: String,
-    fraction: Float
-) {
-    LifterCard(Modifier.padding(top = 16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CardTitle(title, Modifier.weight(1f))
-            val badgeColor =
-                if (badgeNeutral) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiary
-            val badgeTextColor =
-                if (badgeNeutral) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF003824)
-            Text(
-                text = badgeText,
-                modifier = Modifier
-                    .background(color = badgeColor, shape = RoundedCornerShape(16.dp))
-                    .border(BorderStroke(1.dp, badgeColor), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                color = badgeTextColor,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Monospace
-            )
-        }
-
-        Row(
-            modifier = Modifier.padding(top = 8.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Text(
-                text = weightText,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Monospace
-            )
-            Text(
-                text = " KG",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-        ProgressBar(fraction)
-
-        Text(
-            text = goalText,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
-            fontFamily = FontFamily.Monospace,
-            textAlign = androidx.compose.ui.text.style.TextAlign.End
-        )
-    }
-}
-
-@Composable
-private fun ProgressBar(fraction: Float) {
-    val clamped = fraction.coerceIn(0f, 1f)
-    val fillWeight = clamped.coerceAtLeast(0.001f)
-    val emptyWeight = (1f - clamped).coerceAtLeast(0.001f)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(8.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(4.dp)
-            )
-    ) {
-        Box(
-            Modifier
-                .weight(fillWeight)
-                .fillMaxSize()
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(4.dp)
-                )
-        )
-        Box(
-            Modifier
-                .weight(emptyWeight)
-                .fillMaxSize()
-        )
     }
 }
 
@@ -404,7 +309,7 @@ private fun LastSessionCard(
                 text = when {
                     session != null -> formatSessionDate(session.date)
                     isLoading -> "..."
-                    else -> "—"
+                    else -> "\u2014"
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
@@ -417,7 +322,7 @@ private fun LastSessionCard(
         if (session == null) {
             CardCaption("SIN SESIONES REGISTRADAS")
             Text(
-                text = "Completa un entrenamiento para ver aquí el resumen de tu última sesión.",
+                text = "Completa un entrenamiento para ver aqu\u00ED el resumen de tu \u00FAltima sesi\u00F3n.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(top = 6.dp)
@@ -430,7 +335,7 @@ private fun LastSessionCard(
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = if (session.isFreeSession) "SESIÓN EXPRESS" else "SESIÓN DE RUTINA",
+                text = if (session.isFreeSession) "SESI\u00D3N EXPRESS" else "SESI\u00D3N DE RUTINA",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
@@ -451,7 +356,7 @@ private fun LastSessionCard(
 
         Spacer(Modifier.height(14.dp))
         SecondaryButton(
-            text = "VIEW LOG →",
+            text = "VIEW LOG \u2192",
             onClick = { onNavigateToRoutines() },
             minHeight = 46.dp
         )
@@ -494,63 +399,4 @@ private fun AlertBanner() {
             )
         }
     }
-}
-
-private fun formatKg(valKg: Double): String {
-    return if (valKg % 1.0 == 0.0) {
-        valKg.toInt().toString()
-    } else {
-        String.format(Locale.ROOT, "%.1f", valKg)
-    }
-}
-
-private fun formatVolumeKg(volumeKg: Double): String {
-    return String.format(Locale.ROOT, "%,.0f kg", volumeKg)
-}
-
-/**
- * Etiqueta relativa de la fecha de la sesión: HOY / AYER / fecha.
- */
-private fun formatSessionDate(timestamp: Timestamp): String {
-    val sessionDate = timestamp.toDate()
-    val daysDiff = daysBetween(startOfDay(Calendar.getInstance()), startOfDay(sessionDate.time))
-    return when {
-        daysDiff == 0L -> "HOY"
-        daysDiff == 1L -> "AYER"
-        daysDiff in 2..6 -> "HACE $daysDiff DÍAS"
-        else -> SimpleDateFormat("dd MMM yyyy", Locale.ROOT).format(sessionDate).uppercase(Locale.ROOT)
-    }
-}
-
-private fun startOfDay(calendar: Calendar): Calendar =
-    (calendar.clone() as Calendar).apply {
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
-
-private fun startOfDay(millis: Long): Calendar =
-    Calendar.getInstance().apply {
-        timeInMillis = millis
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
-
-private fun daysBetween(from: Calendar, to: Calendar): Long {
-    val diff = from.timeInMillis - to.timeInMillis
-    return Math.round(diff / 86_400_000.0)
-}
-
-private fun calculateGoalPercent(current: Double, goal: Double): String {
-    if (goal <= 0) return "0% Goal"
-    val percent = (current / goal * 100).toInt().coerceIn(0, 100)
-    return "$percent% to ${goal.toInt()}kg Goal"
-}
-
-private fun progressFraction(current: Double, goal: Double): Float {
-    if (goal <= 0) return 0f
-    return (current / goal).toFloat().coerceIn(0f, 1f)
 }

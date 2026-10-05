@@ -1,6 +1,7 @@
 package com.example.lifterlab.ui.features.routines
 
 import androidx.compose.foundation.BorderStroke
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -76,6 +77,11 @@ fun RoutinesScreen(
     warmupRepository: WarmupRepository = remember { WarmupRepository() }
 ) {
     var route by remember { mutableStateOf<RoutinesRoute>(RoutinesRoute.List) }
+
+    // Boton atras nativo dentro del modulo: vuelve al listado y, desde el
+    // listado, sale del modulo hacia el Inicio.
+    BackHandler(enabled = route !is RoutinesRoute.List) { route = RoutinesRoute.List }
+    BackHandler(enabled = route is RoutinesRoute.List) { onBack() }
 
     when (val current = route) {
         is RoutinesRoute.List -> RoutinesListScreen(

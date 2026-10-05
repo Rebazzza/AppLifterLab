@@ -44,9 +44,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun ProfileScreen(
+fun ProfileEditScreen(
     onBack: () -> Unit,
-    onSignOut: () -> Unit,
     authRepository: AuthRepository = remember { AuthRepository() },
     profileRepository: ProfileRepository = remember { ProfileRepository() }
 ) {
@@ -94,8 +93,17 @@ fun ProfileScreen(
                 .padding(bottom = 104.dp)
         ) {
 
-
-            ScreenTitle("Perfil", Modifier.padding(top = 8.dp))
+            Text(
+                text = "← Volver",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 15.sp,
+                modifier = Modifier.clickable { onBack() }
+            )
+            ScreenTitle("Editar Perfil", Modifier.padding(top = 8.dp))
+            ScreenSubtitle(
+                text = "Actualiza tus datos personales y medidas corporales.",
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            )
 
             if (cargando) {
                 ScreenSubtitle(
@@ -170,8 +178,8 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(12.dp))
             SecondaryButton(
-                text = "Cerrar Sesión",
-                onClick = { onSignOut() },
+                text = "Volver al Perfil",
+                onClick = { onBack() },
                 minHeight = 52.dp
             )
         }

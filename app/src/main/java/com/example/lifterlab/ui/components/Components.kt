@@ -5,11 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -257,6 +260,112 @@ fun RowScope.ChippedTag(
         fontSize = 11.sp,
         fontWeight = FontWeight.Medium
     )
+}
+
+/**
+ * Tarjeta de estadística de unExercise básico (Squat / Bench / Deadlift):
+ * peso actual en monoespaciada, barra de progreso y texto de meta.
+ */
+@Composable
+fun SbdStatCard(
+    title: String,
+    badgeText: String,
+    badgeNeutral: Boolean,
+    weightText: String,
+    goalText: String,
+    fraction: Float,
+    modifier: Modifier = Modifier
+) {
+    LifterCard(modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CardTitle(title, Modifier.weight(1f))
+            val badgeColor =
+                if (badgeNeutral) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiary
+            val badgeTextColor =
+                if (badgeNeutral) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF003824)
+            Text(
+                text = badgeText,
+                modifier = Modifier
+                    .background(color = badgeColor, shape = RoundedCornerShape(16.dp))
+                    .border(BorderStroke(1.dp, badgeColor), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                color = badgeTextColor,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+
+        Row(
+            modifier = Modifier.padding(top = 8.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = weightText,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace
+            )
+            Text(
+                text = " KG",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+            )
+        }
+
+        androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+        LifterProgressBar(fraction)
+
+        Text(
+            text = goalText,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
+    }
+}
+
+/** Barra de progreso_segmentada 0f..1f, reutilizada por las tarjetas de estadísticas. */
+@Composable
+fun LifterProgressBar(fraction: Float, modifier: Modifier = Modifier) {
+    val clamped = fraction.coerceIn(0f, 1f)
+    val fillWeight = clamped.coerceAtLeast(0.001f)
+    val emptyWeight = (1f - clamped).coerceAtLeast(0.001f)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(4.dp)
+            )
+    ) {
+        Box(
+            Modifier
+                .weight(fillWeight)
+                .fillMaxSize()
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(4.dp)
+                )
+        )
+        Box(
+            Modifier
+                .weight(emptyWeight)
+                .fillMaxSize()
+        )
+    }
 }
 
 /**

@@ -8,12 +8,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,7 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
@@ -38,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -46,13 +43,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.model.UserProfile
+import com.example.lifterlab.data.model.WorkoutSession
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.ProfileRepository
+import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.ui.components.CardCaption
 import com.example.lifterlab.ui.components.CardTitle
 import com.example.lifterlab.ui.components.ChippedTag
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.google.firebase.Timestamp
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,18 +64,30 @@ fun DashboardScreen(
     onNavigateToRoutines: () -> Unit,
     onNavigateToProfile: () -> Unit,
     authRepository: AuthRepository = remember { AuthRepository() },
-    profileRepository: ProfileRepository = remember { ProfileRepository() }
+    profileRepository: ProfileRepository = remember { ProfileRepository() },
+    warmupRepository: WarmupRepository = remember { WarmupRepository() }
 ) {
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     var profile by remember { mutableStateOf(UserProfile()) }
+
+    // RF04: resumen de la última sesión registrada por el atleta en el historial.
+    var lastSession by remember { mutableStateOf<WorkoutSession?>(null) }
+    var sesionCargada by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId) {
         val result = withContext(Dispatchers.IO) { profileRepository.getProfile(userId) }
         result.onSuccess { profile = it }
     }
 
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            val result = withContext(Dispatchers.IO) { warmupRepository.getWorkoutSessions(userId, 1) }
+            result.onSuccess { sesiones -> lastSession = sesiones.firstOrNull() }
+        }
+        sesionCargada = true
+    }
+
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -81,7 +95,7 @@ fun DashboardScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp)
-                .padding(bottom = 96.dp)
+                .padding(bottom = 24.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -143,23 +157,13 @@ fun DashboardScreen(
 
             ConsistencyCard(streakDays = profile.streakDays)
 
-            LastSessionCard(onNavigateToRoutines = onNavigateToRoutines)
+            LastSessionCard(
+                session = lastSession,
+                isLoading = !sesionCargada,
+                onNavigateToRoutines = onNavigateToRoutines
+            )
 
             AlertBanner()
-        }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 8.dp)
-        ) {
-            BottomNavBar(
-                onNavigateToRoutines = onNavigateToRoutines,
-                onNavigateToProfile = onNavigateToProfile
-            )
-        }
         }
     }
 }
@@ -384,7 +388,11 @@ private fun StatBox(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-private fun LastSessionCard(onNavigateToRoutines: () -> Unit) {
+private fun LastSessionCard(
+    session: WorkoutSession?,
+    isLoading: Boolean,
+    onNavigateToRoutines: () -> Unit
+) {
     LifterCard(Modifier.padding(top = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -392,7 +400,11 @@ private fun LastSessionCard(onNavigateToRoutines: () -> Unit) {
         ) {
             CardTitle("Last Session", Modifier.weight(1f))
             Text(
-                text = "Yesterday",
+                text = when {
+                    session != null -> formatSessionDate(session.date)
+                    isLoading -> "..."
+                    else -> "—"
+                },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 fontFamily = FontFamily.Monospace
@@ -400,9 +412,41 @@ private fun LastSessionCard(onNavigateToRoutines: () -> Unit) {
         }
 
         Spacer(Modifier.height(12.dp))
-        StatBox(Icons.Filled.FitnessCenter, "TOTAL VOLUME", "12,450 kg")
-        Spacer(Modifier.height(8.dp))
-        StatBox(Icons.Filled.Schedule, "DURATION", "94 min")
+
+        if (session == null) {
+            CardCaption("SIN SESIONES REGISTRADAS")
+            Text(
+                text = "Completa un entrenamiento para ver aquí el resumen de tu última sesión.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+        } else {
+            Text(
+                text = session.routineName,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = if (session.isFreeSession) "SESIÓN EXPRESS" else "SESIÓN DE RUTINA",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+            )
+
+            StatBox(Icons.Filled.FitnessCenter, "TOTAL VOLUME", formatVolumeKg(session.totalVolumeKg))
+            Spacer(Modifier.height(8.dp))
+            StatBox(Icons.Filled.Schedule, "DURATION", "${session.durationMins} min")
+            Spacer(Modifier.height(8.dp))
+            StatBox(
+                icon = Icons.Filled.List,
+                label = "EJERCICIOS / SERIES",
+                value = "${session.exercises.size} / ${session.exercises.sumOf { it.sets.size }}"
+            )
+        }
 
         Spacer(Modifier.height(14.dp))
         SecondaryButton(
@@ -451,61 +495,52 @@ private fun AlertBanner() {
     }
 }
 
-@Composable
-private fun BottomNavBar(onNavigateToRoutines: () -> Unit, onNavigateToProfile: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(elevation = 8.dp, shape = RoundedCornerShape(22.dp), clip = false)
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(22.dp)
-            )
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                RoundedCornerShape(22.dp)
-            )
-            .padding(10.dp),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        NavItem("Inicio", Icons.Filled.Home, isActive = true, onClick = {})
-        NavItem("Rutinas", Icons.Filled.FitnessCenter, isActive = false, onClick = onNavigateToRoutines)
-        NavItem("Perfil", Icons.Filled.Person, isActive = false, onClick = onNavigateToProfile)
-    }
-}
-
-@Composable
-private fun RowScope.NavItem(label: String, icon: ImageVector, isActive: Boolean, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .clickable { onClick() }
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
-        )
-        Text(
-            text = label,
-            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.padding(top = 2.dp)
-        )
-    }
-}
-
 private fun formatKg(valKg: Double): String {
     return if (valKg % 1.0 == 0.0) {
         valKg.toInt().toString()
     } else {
         String.format(Locale.ROOT, "%.1f", valKg)
     }
+}
+
+private fun formatVolumeKg(volumeKg: Double): String {
+    return String.format(Locale.ROOT, "%,.0f kg", volumeKg)
+}
+
+/**
+ * Etiqueta relativa de la fecha de la sesión: HOY / AYER / fecha.
+ */
+private fun formatSessionDate(timestamp: Timestamp): String {
+    val sessionDate = timestamp.toDate()
+    val daysDiff = daysBetween(startOfDay(Calendar.getInstance()), startOfDay(sessionDate.time))
+    return when {
+        daysDiff == 0L -> "HOY"
+        daysDiff == 1L -> "AYER"
+        daysDiff in 2..6 -> "HACE $daysDiff DÍAS"
+        else -> SimpleDateFormat("dd MMM yyyy", Locale.ROOT).format(sessionDate).uppercase(Locale.ROOT)
+    }
+}
+
+private fun startOfDay(calendar: Calendar): Calendar =
+    (calendar.clone() as Calendar).apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+private fun startOfDay(millis: Long): Calendar =
+    Calendar.getInstance().apply {
+        timeInMillis = millis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+private fun daysBetween(from: Calendar, to: Calendar): Long {
+    val diff = from.timeInMillis - to.timeInMillis
+    return Math.round(diff / 86_400_000.0)
 }
 
 private fun calculateGoalPercent(current: Double, goal: Double): String {

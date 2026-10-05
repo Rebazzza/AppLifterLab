@@ -48,6 +48,7 @@ import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.toast
+import com.example.lifterlab.ui.features.catalog.CatalogScreen
 import com.example.lifterlab.ui.components.CardCaption
 import com.example.lifterlab.ui.components.ErrorText
 import com.example.lifterlab.ui.components.LifterCard
@@ -63,6 +64,7 @@ private sealed interface RoutinesRoute {
     object List : RoutinesRoute
     data class Editor(val routine: Routine) : RoutinesRoute
     data class Runner(val routine: Routine, val isExpress: Boolean) : RoutinesRoute
+    object Catalog : RoutinesRoute
 }
 
 @Composable
@@ -84,7 +86,8 @@ fun RoutinesScreen(
             onStart = { route = RoutinesRoute.Runner(it, isExpress = false) },
             onExpress = {
                 route = RoutinesRoute.Runner(Routine(name = "Rutina Express"), isExpress = true)
-            }
+            },
+            onNavigateToCatalog = { route = RoutinesRoute.Catalog }
         )
         is RoutinesRoute.Editor -> RoutineEditorScreen(
             routine = current.routine,
@@ -101,6 +104,9 @@ fun RoutinesScreen(
             authRepository = authRepository,
             warmupRepository = warmupRepository
         )
+        RoutinesRoute.Catalog -> CatalogScreen(
+            onBack = { route = RoutinesRoute.List }
+        )
     }
 }
 
@@ -112,7 +118,8 @@ private fun RoutinesListScreen(
     onCreate: () -> Unit,
     onEdit: (Routine) -> Unit,
     onStart: (Routine) -> Unit,
-    onExpress: () -> Unit
+    onExpress: () -> Unit,
+    onNavigateToCatalog: () -> Unit
 ) {
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     val scope = rememberCoroutineScope()
@@ -154,6 +161,13 @@ private fun RoutinesListScreen(
             )
 
             ExpressCard(onClick = onExpress)
+
+            Spacer(Modifier.height(8.dp))
+            SecondaryButton(
+                text = "Catálogos",
+                onClick = onNavigateToCatalog,
+                minHeight = 46.dp
+            )
 
             Spacer(Modifier.height(20.dp))
             Text(

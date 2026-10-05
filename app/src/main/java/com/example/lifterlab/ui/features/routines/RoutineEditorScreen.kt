@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,8 +30,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lifterlab.data.model.CustomExercise
 import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.repository.AuthRepository
+import com.example.lifterlab.data.repository.CustomExerciseRepository
 import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.toast
 import com.example.lifterlab.ui.components.CardCaption
@@ -50,7 +53,8 @@ fun RoutineEditorScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
     authRepository: AuthRepository = remember { AuthRepository() },
-    routineRepository: RoutineRepository = remember { RoutineRepository() }
+    routineRepository: RoutineRepository = remember { RoutineRepository() },
+    customExerciseRepository: CustomExerciseRepository = remember { CustomExerciseRepository() }
 ) {
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     val scope = rememberCoroutineScope()
@@ -60,6 +64,16 @@ fun RoutineEditorScreen(
     var mensajeError by remember { mutableStateOf("") }
     var guardando by remember { mutableStateOf(false) }
     var showAddExerciseDialog by remember { mutableStateOf(false) }
+
+    // RF20: los ejercicios propios del atleta se muestran junto al catálogo global al armar la rutina.
+    var customExercises by remember { mutableStateOf<List<CustomExercise>>(emptyList()) }
+
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            val result = withContext(Dispatchers.IO) { customExerciseRepository.getCustomExercises(userId) }
+            result.onSuccess { customExercises = it }
+        }
+    }
 
     val volume = calculateVolume(activeRoutine)
 
@@ -159,6 +173,7 @@ fun RoutineEditorScreen(
 
     if (showAddExerciseDialog) {
         ExercisePickerDialog(
+            customExercises = customExercises,
             onSelect = { name, target ->
                 activeRoutine = addExercise(activeRoutine, name, target)
                 showAddExerciseDialog = false

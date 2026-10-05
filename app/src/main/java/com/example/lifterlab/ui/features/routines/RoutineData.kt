@@ -98,6 +98,24 @@ fun calculateVolume(routine: Routine): String {
             totalVolume += (set.weightKg * set.reps)
         }
     }
+    return formatVolume(totalVolume)
+}
+
+/**
+ * RF04 — Volumen en vivo: solo cuenta el tonelaje de las series ya verificadas
+ * (peso x repeticiones), que es el que se consolida al cerrar el entrenamiento.
+ */
+fun calculateCompletedVolume(routine: Routine): String {
+    var totalVolume = 0.0
+    for (ex in routine.exercises) {
+        for (set in ex.sets) {
+            if (set.isCompleted) totalVolume += (set.weightKg * set.reps)
+        }
+    }
+    return formatVolume(totalVolume)
+}
+
+private fun formatVolume(totalVolume: Double): String {
     return if (totalVolume >= 1000) {
         String.format(Locale.ROOT, "%.1fk kg", totalVolume / 1000.0)
     } else {
@@ -105,9 +123,18 @@ fun calculateVolume(routine: Routine): String {
     }
 }
 
+/**
+ * RF04 — Referencia de la última sesión: mapea nombre de ejercicio -> series
+ * registradas, para mostrarlas como referencia en las tarjetas del Modo Gimnasio.
+ */
+fun previousSessionReference(sessions: List<WorkoutSession>): Map<String, List<ExerciseSet>> {
+    val lastSession = sessions.firstOrNull { it.exercises.isNotEmpty() } ?: return emptyMap()
+    return lastSession.exercises.associate { exercise -> exercise.name to exercise.sets }
+}
+
 fun buildWorkoutSession(routine: Routine, isExpress: Boolean, durationMins: Int): WorkoutSession {
     val exercises = routine.exercises.mapNotNull { ex ->
-        val sets = ex.sets.filter { it.weightKg > 0 && it.reps > 0 }
+        val sets = ex.sets.filter { it.isCompleted && it.weightKg > 0 }
         if (sets.isEmpty()) null else ex.copy(sets = sets)
     }
     val volume = exercises.sumOf { ex -> ex.sets.sumOf { it.weightKg * it.reps } }

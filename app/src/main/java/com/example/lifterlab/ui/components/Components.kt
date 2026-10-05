@@ -3,13 +3,17 @@ package com.example.lifterlab.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -21,6 +25,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
@@ -28,8 +35,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +47,13 @@ import androidx.compose.ui.unit.sp
 
 val CardCornerRadius = 12.dp
 val FieldCornerRadius = 12.dp
+
+/** Pestañas de la barra de navegación global (solo Home, Routines, Profile). */
+enum class LifterTab {
+    Inicio,
+    Rutinas,
+    Perfil
+}
 
 @Composable
 fun ScreenTitle(text: String, modifier: Modifier = Modifier) {
@@ -235,4 +252,71 @@ fun RowScope.ChippedTag(
         fontSize = 11.sp,
         fontWeight = FontWeight.Medium
     )
+}
+
+/**
+ * Barra de navegación flotante global: permanece visible en todos los módulos
+ * (Inicio, Rutinas, Perfil y submódulos). Se monta una sola vez desde MainActivity.
+ */
+@Composable
+fun LifterBottomNavBar(
+    currentTab: LifterTab?,
+    onNavigateToDashboard: () -> Unit,
+    onNavigateToRoutines: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 8.dp)
+            .fillMaxWidth()
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(22.dp), clip = false)
+            .background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(22.dp)
+            )
+            .border(
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shape = RoundedCornerShape(22.dp)
+            )
+            .padding(10.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        NavItem("Inicio", Icons.Filled.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard)
+        NavItem("Rutinas", Icons.Filled.FitnessCenter, currentTab == LifterTab.Rutinas, onNavigateToRoutines)
+        NavItem("Perfil", Icons.Filled.Person, currentTab == LifterTab.Perfil, onNavigateToProfile)
+    }
+}
+
+@Composable
+private fun RowScope.NavItem(
+    label: String,
+    icon: ImageVector,
+    isActive: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .clickable { onClick() }
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+        Text(
+            text = label,
+            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.padding(top = 2.dp)
+        )
+    }
 }

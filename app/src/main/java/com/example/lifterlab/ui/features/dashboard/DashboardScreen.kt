@@ -52,6 +52,7 @@ import com.example.lifterlab.ui.components.CardTitle
 import com.example.lifterlab.ui.components.ChippedTag
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.components.ScreenTitle
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -95,20 +96,20 @@ fun DashboardScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp)
-                .padding(bottom = 24.dp)
+                .padding(bottom = 104.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    CardTitle("Dashboard", Modifier)
+                    ScreenTitle("LIFTERLAB", Modifier.padding(top = 8.dp))
                     Text(
                         text = "CURRENT CYCLE: WEEK ${profile.currentCycleWeek} / ${profile.cyclePhase}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
                     )
                 }
 

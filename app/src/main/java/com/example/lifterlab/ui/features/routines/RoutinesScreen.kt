@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -140,19 +141,15 @@ private fun RoutinesListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(bottom = 104.dp)
         ) {
-            Text(
-                text = "← Volver",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.clickable { onBack() }
-            )
 
             ScreenTitle("Rutinas", Modifier.padding(top = 8.dp))
             ScreenSubtitle(
                 "Crea, edita e inicia tus entrenamientos.",
-                Modifier.padding(top = 4.dp, bottom = 16.dp)
+                Modifier.padding(top = 8.dp, bottom = 16.dp)
             )
 
             PrimaryButton(

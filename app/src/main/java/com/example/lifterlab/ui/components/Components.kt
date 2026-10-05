@@ -37,13 +37,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lifterlab.ui.theme.NavBarSurface
+import com.example.lifterlab.ui.theme.NavBarSurfaceTop
 
 val CardCornerRadius = 12.dp
 val FieldCornerRadius = 12.dp
@@ -266,22 +271,38 @@ fun LifterBottomNavBar(
     onNavigateToProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val forma = RoundedCornerShape(22.dp)
     Row(
         modifier = modifier
             .navigationBarsPadding()
             .padding(horizontal = 16.dp)
-            .padding(bottom = 8.dp)
+            .padding(bottom = 12.dp)
             .fillMaxWidth()
-            .shadow(elevation = 8.dp, shape = RoundedCornerShape(22.dp), clip = false)
+            .shadow(
+                elevation = 14.dp,
+                shape = forma,
+                clip = false,
+                ambientColor = NavBarSurface,
+                spotColor = NavBarSurface
+            )
             .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(22.dp)
+                brush = Brush.verticalGradient(
+                    listOf(NavBarSurfaceTop, NavBarSurface)
+                ),
+                shape = forma
             )
-            .border(
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shape = RoundedCornerShape(22.dp)
-            )
-            .padding(10.dp),
+            .drawWithContent {
+                drawContent()
+                val grosor = 1.dp.toPx()
+                val sangria = 26.dp.toPx()
+                drawLine(
+                    color = Color.White.copy(alpha = 0.14f),
+                    start = Offset(sangria, grosor / 2f),
+                    end = Offset(size.width - sangria, grosor / 2f),
+                    strokeWidth = grosor
+                )
+            }
+            .padding(8.dp),
         horizontalArrangement = Arrangement.Center
     ) {
         NavItem("Inicio", Icons.Filled.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard)
@@ -297,6 +318,8 @@ private fun RowScope.NavItem(
     isActive: Boolean,
     onClick: () -> Unit
 ) {
+    val tintActivo = MaterialTheme.colorScheme.primaryContainer
+    val tintInactivo = MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier = Modifier
             .weight(1f)
@@ -307,12 +330,12 @@ private fun RowScope.NavItem(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (isActive) tintActivo else tintInactivo,
             modifier = Modifier.size(20.dp)
         )
         Text(
             text = label,
-            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (isActive) tintActivo else tintInactivo,
             fontSize = 10.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = FontFamily.Monospace,

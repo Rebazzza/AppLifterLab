@@ -84,12 +84,7 @@ fun RoutineEditorScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text(
-                text = "← Volver",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.clickable { onBack() }
-            )
+
 
             ScreenTitle(if (routine.id.isBlank()) "Nueva Rutina" else "Editar Rutina", Modifier.padding(top = 8.dp))
             ScreenSubtitle(

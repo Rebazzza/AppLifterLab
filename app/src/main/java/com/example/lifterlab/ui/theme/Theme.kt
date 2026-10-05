@@ -8,6 +8,8 @@ import androidx.compose.ui.graphics.Color
 val BgBackground = Color(0xFF131315)
 val BgSurfaceLow = Color(0xFF1C1B1D)
 val BgSurfaceHigh = Color(0xFF2A2A2C)
+val NavBarSurface = Color(0xFF47474A)
+val NavBarSurfaceTop = Color(0xFF5C5C61)
 val OutlineVariant = Color(0xFF464554)
 val PrimaryAccent = Color(0xFF6567E3)
 val PrimaryContainer = Color(0xFF8083FF)

@@ -91,13 +91,9 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(bottom = 104.dp)
         ) {
-            Text(
-                text = "← Volver",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.clickable { onBack() }
-            )
+
 
             ScreenTitle("Perfil", Modifier.padding(top = 8.dp))
 

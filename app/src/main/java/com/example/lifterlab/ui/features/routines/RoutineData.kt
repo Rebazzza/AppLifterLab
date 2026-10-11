@@ -7,18 +7,18 @@ import com.example.lifterlab.data.model.WorkoutSession
 import java.util.Locale
 
 val catalogExercises = listOf(
-    Pair("Barbell Squat", "Target: Quads, Glutes"),
-    Pair("Bench Press", "Target: Chest, Triceps"),
-    Pair("Deadlift", "Target: Back, Hamstrings"),
-    Pair("Romanian Deadlift", "Target: Hamstrings, Glutes"),
-    Pair("Overhead Press", "Target: Shoulders, Triceps"),
-    Pair("Barbell Row", "Target: Lats, Upper Back"),
-    Pair("Incline Dumbbell Press", "Target: Upper Chest, Shoulders"),
-    Pair("Pull Ups", "Target: Lats, Biceps"),
-    Pair("Dips", "Target: Chest, Triceps"),
-    Pair("Leg Press", "Target: Quads"),
-    Pair("Leg Curl", "Target: Hamstrings"),
-    Pair("Calf Raise", "Target: Calves")
+    Pair("Sentadilla con Barra", "Objetivo: Cuádriceps, Glúteos"),
+    Pair("Press de Banca", "Objetivo: Pecho, Tríceps"),
+    Pair("Peso Muerto", "Objetivo: Espalda, Isquiotibiales"),
+    Pair("Peso Muerto Rumano", "Objetivo: Isquiotibiales, Glúteos"),
+    Pair("Press Militar", "Objetivo: Hombros, Tríceps"),
+    Pair("Remo con Barra", "Objetivo: Dorsales, Espalda Alta"),
+    Pair("Press Inclinado con Mancuernas", "Objetivo: Pecho Superior, Hombros"),
+    Pair("Dominadas", "Objetivo: Dorsales, Bíceps"),
+    Pair("Fondos", "Objetivo: Pecho, Tríceps"),
+    Pair("Prensa de Piernas", "Objetivo: Cuádriceps"),
+    Pair("Curl de Piernas", "Objetivo: Isquiotibiales"),
+    Pair("Elevación de Talones", "Objetivo: Pantorrillas")
 )
 
 fun addExercise(routine: Routine, name: String, targetMuscles: String): Routine {
@@ -27,6 +27,7 @@ fun addExercise(routine: Routine, name: String, targetMuscles: String): Routine 
         RoutineExercise(
             name = name,
             targetMuscles = targetMuscles,
+            executionOrder = exercises.size + 1,
             sets = listOf(
                 ExerciseSet(setNumber = 1, weightKg = 100.0, reps = 5, rpe = 8.0),
                 ExerciseSet(setNumber = 2, weightKg = 100.0, reps = 5, rpe = 8.5)
@@ -40,8 +41,29 @@ fun removeExercise(routine: Routine, exIndex: Int): Routine {
     if (exIndex !in routine.exercises.indices) return routine
     val exercises = routine.exercises.toMutableList()
     exercises.removeAt(exIndex)
-    return routine.copy(exercises = exercises)
+    return routine.copy(exercises = exercises.renumberExecutionOrder())
 }
+
+/**
+ * RF23 — Reordenamiento de ejercicios (drag-and-drop o flechas Subir/Bajar).
+ * Mueve el ejercicio de [fromIndex] a [toIndex] dentro de la rutina o sesión activa y
+ * recalcula la numeración de ejecución secuencial (1..n) de todos los ejercicios.
+ */
+fun moveExercise(routine: Routine, fromIndex: Int, toIndex: Int): Routine {
+    if (fromIndex == toIndex) return routine
+    if (fromIndex !in routine.exercises.indices || toIndex !in routine.exercises.indices) return routine
+    val exercises = routine.exercises.toMutableList()
+    val movido = exercises.removeAt(fromIndex)
+    exercises.add(toIndex, movido)
+    return routine.copy(exercises = exercises.renumberExecutionOrder())
+}
+
+/** RF23 — Recalcula executionOrder (1, 2, 3…) según la posición actual de cada ejercicio. */
+private fun List<RoutineExercise>.renumberExecutionOrder(): List<RoutineExercise> =
+    mapIndexed { index, exercise ->
+        if (exercise.executionOrder == index + 1) exercise
+        else exercise.copy(executionOrder = index + 1)
+    }
 
 fun updateSetData(
     routine: Routine,

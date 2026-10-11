@@ -45,14 +45,14 @@ class FirestoreSeeder(
                 deadliftGoalKg = 235.0,
                 streakDays = 4,
                 currentCycleWeek = 4,
-                cyclePhase = "PEAK"
+                cyclePhase = "PICO"
             )
             userRef.set(profile).await()
 
             // Sesión inicial de entrenamiento
             val sessionsRef = userRef.collection("workout_sessions")
             val sampleSession = WorkoutSession(
-                routineName = "Heavy Lower Body - A",
+                routineName = "Tren Inferior Pesado - A",
                 totalVolumeKg = 12450.0,
                 durationMins = 94,
                 isFreeSession = false
@@ -63,22 +63,22 @@ class FirestoreSeeder(
             val routinesRef = userRef.collection("routines")
 
             val routine1 = Routine(
-                name = "Heavy Lower Body - A",
-                category = "HYPERTROPHY",
-                tags = listOf("HYPERTROPHY", "LEGS"),
+                name = "Tren Inferior Pesado - A",
+                category = "HIPERTROFIA",
+                tags = listOf("HIPERTROFIA", "PIERNAS"),
                 estimatedTimeMins = 60,
                 exercises = listOf(
                     RoutineExercise(
-                        name = "Barbell Squat",
-                        targetMuscles = "Target: Quads, Glutes",
+                        name = "Sentadilla con Barra",
+                        targetMuscles = "Objetivo: Cuádriceps, Glúteos",
                         sets = listOf(
                             ExerciseSet(setNumber = 1, weightKg = 140.0, reps = 5, rpe = 8.0),
                             ExerciseSet(setNumber = 2, weightKg = 140.0, reps = 5, rpe = 8.5)
                         )
                     ),
                     RoutineExercise(
-                        name = "Romanian Deadlift",
-                        targetMuscles = "Target: Hamstrings, Glutes",
+                        name = "Peso Muerto Rumano",
+                        targetMuscles = "Objetivo: Isquiotibiales, Glúteos",
                         sets = listOf(
                             ExerciseSet(setNumber = 1, weightKg = 120.0, reps = 8, rpe = 8.0),
                             ExerciseSet(setNumber = 2, weightKg = 125.0, reps = 8, rpe = 9.0)
@@ -88,22 +88,22 @@ class FirestoreSeeder(
             )
 
             val routine2 = Routine(
-                name = "Push Day - Hypertrophy",
-                category = "HYPERTROPHY",
-                tags = listOf("HYPERTROPHY", "PUSH"),
+                name = "Día de Empuje - Hipertrofia",
+                category = "HIPERTROFIA",
+                tags = listOf("HIPERTROFIA", "EMPUJE"),
                 estimatedTimeMins = 60,
                 exercises = listOf(
                     RoutineExercise(
-                        name = "Bench Press",
-                        targetMuscles = "Target: Chest, Triceps",
+                        name = "Press de Banca",
+                        targetMuscles = "Objetivo: Pecho, Tríceps",
                         sets = listOf(
                             ExerciseSet(setNumber = 1, weightKg = 100.0, reps = 8, rpe = 8.0),
                             ExerciseSet(setNumber = 2, weightKg = 100.0, reps = 8, rpe = 8.5)
                         )
                     ),
                     RoutineExercise(
-                        name = "Overhead Press",
-                        targetMuscles = "Target: Shoulders, Triceps",
+                        name = "Press Militar",
+                        targetMuscles = "Objetivo: Hombros, Tríceps",
                         sets = listOf(
                             ExerciseSet(setNumber = 1, weightKg = 60.0, reps = 8, rpe = 8.0)
                         )
@@ -112,21 +112,21 @@ class FirestoreSeeder(
             )
 
             val routine3 = Routine(
-                name = "Pull Day - Strength",
-                category = "STRENGTH",
-                tags = listOf("STRENGTH", "PULL"),
+                name = "Día de Tirón - Fuerza",
+                category = "FUERZA",
+                tags = listOf("FUERZA", "TIRÓN"),
                 estimatedTimeMins = 75,
                 exercises = listOf(
                     RoutineExercise(
-                        name = "Deadlift",
-                        targetMuscles = "Target: Back, Hamstrings",
+                        name = "Peso Muerto",
+                        targetMuscles = "Objetivo: Espalda, Isquiotibiales",
                         sets = listOf(
                             ExerciseSet(setNumber = 1, weightKg = 180.0, reps = 5, rpe = 8.5)
                         )
                     ),
                     RoutineExercise(
-                        name = "Barbell Row",
-                        targetMuscles = "Target: Lats, Upper Back",
+                        name = "Remo con Barra",
+                        targetMuscles = "Objetivo: Dorsales, Espalda Alta",
                         sets = listOf(
                             ExerciseSet(setNumber = 1, weightKg = 90.0, reps = 8, rpe = 8.0)
                         )

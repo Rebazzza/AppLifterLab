@@ -78,6 +78,14 @@ fun RoutineEditorScreen(
 
     val volume = calculateVolume(activeRoutine)
 
+    // RF23 — Reordenamiento por arrastre (drag-and-drop) y alternativa con flechas.
+    val dragState = rememberExerciseDragState { fromIndex, toIndex ->
+        activeRoutine = moveExercise(activeRoutine, fromIndex, toIndex)
+    }
+    LaunchedEffect(activeRoutine.exercises.size) {
+        dragState.syncSize(activeRoutine.exercises.size)
+    }
+
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -109,18 +117,26 @@ fun RoutineEditorScreen(
             )
 
             activeRoutine.exercises.forEachIndexed { exIndex, exercise ->
-                ExerciseCard(
-                    exercise = exercise,
-                    onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
-                        activeRoutine = updateSetData(activeRoutine, exIndex, setIndex, weightKg, reps, rpe, isCompleted)
-                    },
-                    onAddSet = {
-                        activeRoutine = addSetToExercise(activeRoutine, exIndex)
-                    },
-                    onDeleteExercise = {
-                        activeRoutine = removeExercise(activeRoutine, exIndex)
-                    }
-                )
+                ReorderableExerciseItem(dragState, exIndex) {
+                    ExerciseCard(
+                        exercise = exercise,
+                        isDragging = dragState.isDragging(exIndex),
+                        dragHandleModifier = Modifier.dragHandleFor(dragState, exIndex),
+                        canMoveUp = exIndex > 0,
+                        canMoveDown = exIndex < activeRoutine.exercises.lastIndex,
+                        onMoveUp = { activeRoutine = moveExercise(activeRoutine, exIndex, exIndex - 1) },
+                        onMoveDown = { activeRoutine = moveExercise(activeRoutine, exIndex, exIndex + 1) },
+                        onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
+                            activeRoutine = updateSetData(activeRoutine, exIndex, setIndex, weightKg, reps, rpe, isCompleted)
+                        },
+                        onAddSet = {
+                            activeRoutine = addSetToExercise(activeRoutine, exIndex)
+                        },
+                        onDeleteExercise = {
+                            activeRoutine = removeExercise(activeRoutine, exIndex)
+                        }
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -131,7 +147,7 @@ fun RoutineEditorScreen(
             )
 
             LifterCard(Modifier.padding(top = 16.dp)) {
-                CardCaption("VOLUMEN ESTIMADO (EST. VOLUME)")
+                CardCaption("VOLUMEN ESTIMADO")
                 Text(
                     text = volume,
                     color = MaterialTheme.colorScheme.primaryContainer,

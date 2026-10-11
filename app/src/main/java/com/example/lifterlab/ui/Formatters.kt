@@ -5,6 +5,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+/** Locale de salida para que los meses y números se pinten en español. */
+private val ES = Locale("es")
+
 /** Peso sin decimales innecesarios: 185 -> "185", 187.5 -> "187.5". */
 fun formatKg(valKg: Double): String {
     return if (valKg % 1.0 == 0.0) {
@@ -27,13 +30,13 @@ fun formatSessionDate(timestamp: Timestamp): String {
         daysDiff == 0L -> "HOY"
         daysDiff == 1L -> "AYER"
         daysDiff in 2..6 -> "HACE $daysDiff DÍAS"
-        else -> SimpleDateFormat("dd MMM yyyy", Locale.ROOT).format(sessionDate).uppercase(Locale.ROOT)
+        else -> SimpleDateFormat("dd MMM yyyy", ES).format(sessionDate).uppercase(ES)
     }
 }
 
 /** Fecha corta para listados de historial: 08/03/2026. */
 fun formatShortDate(timestamp: Timestamp): String {
-    return SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(timestamp.toDate())
+    return SimpleDateFormat("dd/MM/yyyy", ES).format(timestamp.toDate())
 }
 
 private fun startOfDay(calendar: Calendar): Calendar =
@@ -58,11 +61,11 @@ private fun daysBetween(from: Calendar, to: Calendar): Long {
     return Math.round(diff / 86_400_000.0)
 }
 
-/** Texto de progreso hacia la meta: "72% to 200kg Goal". */
+/** Texto de progreso hacia la meta: "72% de 200kg (meta)". */
 fun calculateGoalPercent(current: Double, goal: Double): String {
-    if (goal <= 0) return "0% Goal"
+    if (goal <= 0) return "0% de la meta"
     val percent = (current / goal * 100).toInt().coerceIn(0, 100)
-    return "$percent% to ${goal.toInt()}kg Goal"
+    return "$percent% de ${goal.toInt()}kg (meta)"
 }
 
 /** Fracción 0f..1f del progreso hacia la meta. */

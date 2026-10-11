@@ -133,7 +133,7 @@ fun ProfileViewScreen(
                         modifier = Modifier.padding(top = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        ChippedTag("${current.streakDays} DIA STREAK")
+                        ChippedTag("${current.streakDays} DÍAS DE RACHA")
                         ChippedTag("CICLO ${current.currentCycleWeek} - ${current.cyclePhase}")
                     }
                 }
@@ -150,7 +150,7 @@ fun ProfileViewScreen(
             }
 
             SbdStatCard(
-                title = "Squat",
+                title = "Sentadilla",
                 badgeText = "1RM",
                 badgeNeutral = true,
                 weightText = formatKg(current?.squat1RM ?: 0.0),
@@ -159,7 +159,7 @@ fun ProfileViewScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
             SbdStatCard(
-                title = "Bench",
+                title = "Press Banca",
                 badgeText = "1RM",
                 badgeNeutral = true,
                 weightText = formatKg(current?.bench1RM ?: 0.0),
@@ -168,7 +168,7 @@ fun ProfileViewScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
             SbdStatCard(
-                title = "Deadlift",
+                title = "Peso Muerto",
                 badgeText = "1RM",
                 badgeNeutral = true,
                 weightText = formatKg(current?.deadlift1RM ?: 0.0),
@@ -198,7 +198,7 @@ fun ProfileViewScreen(
                         CardCaption("SIN SESIONES REGISTRADAS", Modifier.padding(top = 16.dp))
                         Text(
                             text = "Cuando completes un entrenamiento en el Modo Gimnasio " +
-                                "veras aqui el detalle de cada sesion.",
+                                "verás aquí el detalle de cada sesión.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             modifier = Modifier.padding(top = 6.dp)
@@ -272,7 +272,7 @@ private fun SessionRow(session: WorkoutSession, mostrarSeparador: Boolean) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = session.routineName.ifEmpty { "Sesion libre" },
+                text = session.routineName.ifEmpty { "Sesión libre" },
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,

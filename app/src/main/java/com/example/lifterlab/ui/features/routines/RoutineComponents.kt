@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +23,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -34,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -47,20 +54,57 @@ import com.example.lifterlab.data.model.RoutineExercise
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.SecondaryButton
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 fun ExerciseCard(
     exercise: RoutineExercise,
     reference: List<ExerciseSet> = emptyList(),
+    gymMode: Boolean = false,
+    isDragging: Boolean = false,
+    dragHandleModifier: Modifier = Modifier,
+    canMoveUp: Boolean = false,
+    canMoveDown: Boolean = false,
     onUpdateSet: (Int, Double?, Int?, Double?, Boolean?) -> Unit,
     onAddSet: () -> Unit,
-    onDeleteExercise: () -> Unit
+    onDeleteExercise: () -> Unit,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {}
 ) {
-    LifterCard(Modifier.padding(top = 16.dp)) {
+    val cardShape = RoundedCornerShape(12.dp)
+    LifterCard(
+        Modifier
+            .padding(top = 16.dp)
+            .then(
+                if (isDragging) Modifier.shadow(
+                    elevation = 12.dp,
+                    shape = cardShape,
+                    clip = false,
+                    ambientColor = MaterialTheme.colorScheme.primary,
+                    spotColor = MaterialTheme.colorScheme.primary
+                ) else Modifier
+            )
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // RF23 — Agarre de arrastre: mantener presionado y mover reordena el ejercicio.
+            Box(
+                modifier = dragHandleModifier
+                    .padding(end = 4.dp)
+                    .size(width = 34.dp, height = 52.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.DragHandle,
+                    contentDescription = "Reordenar ${exercise.name}",
+                    tint = if (isDragging) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
             Column(Modifier.weight(1f)) {
                 Text(
                     text = exercise.name,
@@ -69,10 +113,33 @@ fun ExerciseCard(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = exercise.targetMuscles.ifEmpty { "Target: General" },
+                    text = exercise.targetMuscles.ifEmpty { "Objetivo: General" },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace
+                )
+            }
+
+            if (canMoveUp) {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowUp,
+                    contentDescription = "Subir ${exercise.name}",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clickable { onMoveUp() }
+                        .padding(4.dp)
+                )
+            }
+            if (canMoveDown) {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = "Bajar ${exercise.name}",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clickable { onMoveDown() }
+                        .padding(4.dp)
                 )
             }
 
@@ -93,11 +160,11 @@ fun ExerciseCard(
                 .padding(top = 14.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HeaderCol("SET", 1.5f, TextAlign.Start)
+            HeaderCol("SERIE", 1.5f, TextAlign.Start)
             HeaderCol("KG", 2.5f, TextAlign.Center)
             HeaderCol("REPS", 2.5f, TextAlign.Center)
             HeaderCol("RPE", 2f, TextAlign.Center)
-            HeaderCol("STATUS", 2f, TextAlign.Center)
+            HeaderCol("ESTADO", 2f, TextAlign.Center)
         }
 
         exercise.sets.forEachIndexed { setIndex, set ->
@@ -105,6 +172,7 @@ fun ExerciseCard(
                 setIndex = setIndex,
                 set = set,
                 reference = reference.getOrNull(setIndex),
+                gymMode = gymMode,
                 onUpdate = onUpdateSet
             )
             Spacer(Modifier.height(6.dp))
@@ -112,7 +180,7 @@ fun ExerciseCard(
 
         Spacer(Modifier.height(14.dp))
         SecondaryButton(
-            text = "+ Add Set",
+            text = "+ Agregar Serie",
             onClick = onAddSet,
             minHeight = 42.dp
         )
@@ -136,6 +204,7 @@ fun SetRow(
     setIndex: Int,
     set: ExerciseSet,
     reference: ExerciseSet? = null,
+    gymMode: Boolean = false,
     onUpdate: (Int, Double?, Int?, Double?, Boolean?) -> Unit
 ) {
     var kgText by remember { mutableStateOf(if (set.weightKg > 0) set.weightKg.toString() else "") }
@@ -203,16 +272,29 @@ fun SetRow(
                 keyboardType = KeyboardType.Number
             )
 
-            InlineNumberField(
-                value = rpeText,
-                onValueChange = { v ->
-                    rpeText = v
-                    onUpdate(setIndex, null, null, v.toDoubleOrNull() ?: 0.0, null)
-                },
-                hint = "8.0",
-                color = MaterialTheme.colorScheme.secondary,
-                weight = 2f
-            )
+            if (gymMode) {
+                Text(
+                    text = rpeLabel(set.rpe),
+                    color = if (set.rpe > 0) MaterialTheme.colorScheme.secondary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(2f)
+                )
+            } else {
+                InlineNumberField(
+                    value = rpeText,
+                    onValueChange = { v ->
+                        rpeText = v
+                        onUpdate(setIndex, null, null, v.toDoubleOrNull() ?: 0.0, null)
+                    },
+                    hint = "8.0",
+                    color = MaterialTheme.colorScheme.secondary,
+                    weight = 2f
+                )
+            }
 
             Box(
                 modifier = Modifier.weight(2f),
@@ -230,6 +312,76 @@ fun SetRow(
                         }
                 )
             }
+        }
+
+        // RF05 — Modo Gimnasio: el selector de esfuerzo se despliega solo cuando la
+        // serie está completada, en una sola fila desplazable para no saturar la tarjeta.
+        if (gymMode && completed) {
+            RpeSelector(
+                currentRpe = set.rpe,
+                onSelect = { nuevoRpe -> onUpdate(setIndex, null, null, nuevoRpe ?: 0.0, null) },
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+/** RF05 — Escala de esfuerzo percibido basada en RIR: de @6.0 a @10.0 en pasos de 0.5. */
+val rpeScale: List<Double> = (12..20).map { it / 2.0 }
+
+private fun rpeLabel(rpe: Double): String = if (rpe > 0) "@${rpe}" else "—"
+
+/**
+ * RF05 — Selector horizontal de RPE. Un toque fija el valor; tocar el valor ya elegido
+ * lo limpia, ya que el registro del esfuerzo es opcional.
+ */
+@Composable
+fun RpeSelector(
+    currentRpe: Double,
+    onSelect: (Double?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "RPE",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = FontFamily.Monospace
+        )
+
+        rpeScale.forEach { option ->
+            val seleccionado = abs(currentRpe - option) < 0.001
+            val shape = RoundedCornerShape(50)
+            Text(
+                text = "@${option}",
+                color = if (seleccionado) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier
+                    .clip(shape)
+                    .background(
+                        color = if (seleccionado) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    .border(
+                        border = BorderStroke(
+                            1.dp,
+                            if (seleccionado) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outlineVariant
+                        ),
+                        shape = shape
+                    )
+                    .clickable { onSelect(if (seleccionado) null else option) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            )
         }
     }
 }
@@ -304,14 +456,14 @@ fun ExercisePickerDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    onSelect(exercise.name, "Target: ${exercise.primaryMuscle}")
+                                    onSelect(exercise.name, "Objetivo: ${exercise.primaryMuscle}")
                                 }
                                 .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(
-                                    text = "${exercise.name} (Target: ${exercise.primaryMuscle})",
+                                    text = "${exercise.name} (Objetivo: ${exercise.primaryMuscle})",
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp
                                 )

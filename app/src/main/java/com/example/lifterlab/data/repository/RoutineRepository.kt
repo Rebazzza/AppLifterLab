@@ -21,7 +21,9 @@ class RoutineRepository(
                 .await()
 
             val routines = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Routine::class.java)?.copy(id = doc.id)
+                doc.toObject(Routine::class.java)
+                    ?.copy(id = doc.id)
+                    ?.let { renumberExecutionOrder(it) }
             }
             Result.success(routines)
         } catch (e: Exception) {
@@ -31,6 +33,8 @@ class RoutineRepository(
 
     /**
      * Guarda o actualiza una plantilla de rutina en /users/{userId}/routines/{routineId}.
+     * El arreglo de ejercicios se persiste en el orden vigente, con executionOrder
+     * secuencial (RF23).
      * Retorna el ID del documento guardado.
      */
     suspend fun saveRoutine(userId: String, routine: Routine): Result<String> {
@@ -47,13 +51,21 @@ class RoutineRepository(
             }
 
 
-            val routineToSave = routine.copy(id = docRef.id)
+            val routineToSave = renumberExecutionOrder(routine.copy(id = docRef.id))
             docRef.set(routineToSave).await()
             Result.success(docRef.id)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
+
+    /** RF23 — executionOrder secuencial (1..n) según el orden actual de ejecución. */
+    private fun renumberExecutionOrder(routine: Routine): Routine = routine.copy(
+        exercises = routine.exercises.mapIndexed { index, exercise ->
+            if (exercise.executionOrder == index + 1) exercise
+            else exercise.copy(executionOrder = index + 1)
+        }
+    )
 
     /**
      * Elimina una plantilla de rutina de /users/{userId}/routines/{routineId}.

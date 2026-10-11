@@ -88,6 +88,7 @@ class ActiveSessionRepository(context: Context) {
                     .put("exerciseId", exercise.exerciseId)
                     .put("name", exercise.name)
                     .put("targetMuscles", exercise.targetMuscles)
+                    .put("executionOrder", exercise.executionOrder)
                     .put("sets", setsJson)
             )
         }
@@ -129,6 +130,7 @@ class ActiveSessionRepository(context: Context) {
                     exerciseId = exerciseJson.optString("exerciseId", ""),
                     name = exerciseJson.optString("name", ""),
                     targetMuscles = exerciseJson.optString("targetMuscles", ""),
+                    executionOrder = exerciseJson.optInt("executionOrder", i + 1),
                     sets = sets
                 )
             )

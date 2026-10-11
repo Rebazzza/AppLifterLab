@@ -263,7 +263,7 @@ fun RowScope.ChippedTag(
 }
 
 /**
- * Tarjeta de estadística de unExercise básico (Squat / Bench / Deadlift):
+ * Tarjeta de estadística de un ejercicio básico (Sentadilla / Press Banca / Peso Muerto):
  * peso actual en monoespaciada, barra de progreso y texto de meta.
  */
 @Composable

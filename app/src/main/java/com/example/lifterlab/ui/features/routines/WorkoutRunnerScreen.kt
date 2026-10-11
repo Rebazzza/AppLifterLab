@@ -49,6 +49,10 @@ import kotlinx.coroutines.withContext
 
 /**
  * RF04 — Modo Gimnasio: registro de series, peso y repeticiones.
+ * RF05 — Esfuerzo percibido: al completar una serie se despliega el selector de RPE
+ * (@6.0 a @10.0) y el valor viaja como campo numérico en cada serie.
+ * RF23 — Reordenamiento: los ejercicios se pueden reordenar por arrastre o con las
+ * flechas Subir/Bajar; el nuevo orden se guarda en la sesión activa e historial.
  * Genera la sesión activa en el estado local del dispositivo, muestra cada serie con la
  * referencia de la sesión anterior y, al cerrar, consolida el tonelaje y guarda la
  * sesión en /users/{userId}/workout_sessions.
@@ -135,6 +139,14 @@ fun WorkoutRunnerScreen(
     val completedSets = activeRoutine.exercises.sumOf { ex -> ex.sets.count { it.isCompleted } }
     val duracionMins = ((ahora - startedAt) / 60000L).toInt().coerceAtLeast(0)
 
+    // RF23 — Reordenar en vivo el orden de ejecución de los ejercicios de la sesión.
+    val dragState = rememberExerciseDragState { fromIndex, toIndex ->
+        actualizarSesion { r -> moveExercise(r, fromIndex, toIndex) }
+    }
+    LaunchedEffect(activeRoutine.exercises.size) {
+        dragState.syncSize(activeRoutine.   exercises.size)
+    }
+
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -204,19 +216,28 @@ fun WorkoutRunnerScreen(
             }
 
             activeRoutine.exercises.forEachIndexed { exIndex, exercise ->
-                ExerciseCard(
-                    exercise = exercise,
-                    reference = referenciaPrevia[exercise.name].orEmpty(),
-                    onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
-                        actualizarSesion { r -> updateSetData(r, exIndex, setIndex, weightKg, reps, rpe, isCompleted) }
-                    },
-                    onAddSet = {
-                        actualizarSesion { r -> addSetToExercise(r, exIndex) }
-                    },
-                    onDeleteExercise = {
-                        actualizarSesion { r -> removeExercise(r, exIndex) }
-                    }
-                )
+                ReorderableExerciseItem(dragState, exIndex) {
+                    ExerciseCard(
+                        exercise = exercise,
+                        reference = referenciaPrevia[exercise.name].orEmpty(),
+                        gymMode = true,
+                        isDragging = dragState.isDragging(exIndex),
+                        dragHandleModifier = Modifier.dragHandleFor(dragState, exIndex),
+                        canMoveUp = exIndex > 0,
+                        canMoveDown = exIndex < activeRoutine.exercises.lastIndex,
+                        onMoveUp = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex - 1) } },
+                        onMoveDown = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex + 1) } },
+                        onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
+                            actualizarSesion { r -> updateSetData(r, exIndex, setIndex, weightKg, reps, rpe, isCompleted) }
+                        },
+                        onAddSet = {
+                            actualizarSesion { r -> addSetToExercise(r, exIndex) }
+                        },
+                        onDeleteExercise = {
+                            actualizarSesion { r -> removeExercise(r, exIndex) }
+                        }
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))

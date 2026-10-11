@@ -25,7 +25,7 @@ data class CustomExercise(
             "Hombros",
             "Bíceps",
             "Tríceps",
-            "Core",
+            "Zona Media",
             "Gemelos"
         )
 

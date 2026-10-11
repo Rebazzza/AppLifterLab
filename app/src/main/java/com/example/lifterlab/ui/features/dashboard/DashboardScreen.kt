@@ -107,7 +107,7 @@ fun DashboardScreen(
                 Column(Modifier.weight(1f)) {
                     ScreenTitle("LIFTERLAB", Modifier.padding(top = 8.dp))
                     Text(
-                        text = "CURRENT CYCLE: WEEK ${profile.currentCycleWeek} / ${profile.cyclePhase}",
+                        text = "CICLO ACTUAL: SEMANA ${profile.currentCycleWeek} / ${profile.cyclePhase}",
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
@@ -134,7 +134,7 @@ fun DashboardScreen(
             }
 
             SbdStatCard(
-                title = "Squat",
+                title = "Sentadilla",
                 badgeText = "\u2191 +2.5KG",
                 badgeNeutral = false,
                 weightText = formatKg(profile.squat1RM),
@@ -143,7 +143,7 @@ fun DashboardScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
             SbdStatCard(
-                title = "Bench",
+                title = "Press Banca",
                 badgeText = "-",
                 badgeNeutral = true,
                 weightText = formatKg(profile.bench1RM),
@@ -152,7 +152,7 @@ fun DashboardScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
             SbdStatCard(
-                title = "Deadlift",
+                title = "Peso Muerto",
                 badgeText = "\u2191 +5.0KG",
                 badgeNeutral = false,
                 weightText = formatKg(profile.deadlift1RM),
@@ -182,9 +182,9 @@ private fun ConsistencyCard(streakDays: Int) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                CardTitle("Consistency")
+                CardTitle("Consistencia")
                 Text(
-                    text = "Training Frequency (Last 14 Days)",
+                    text = "Frecuencia de Entrenamiento (Últimos 14 Días)",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -199,7 +199,7 @@ private fun ConsistencyCard(streakDays: Int) {
                     fontFamily = FontFamily.Monospace
                 )
                 Text(
-                    text = " DAY\nSTREAK",
+                    text = " DÍAS\nDE RACHA",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
@@ -209,7 +209,7 @@ private fun ConsistencyCard(streakDays: Int) {
             }
         }
 
-        val dayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
+        val dayLabels = listOf("L", "M", "X", "J", "V", "S", "D")
         val activeDaysRow1 = listOf(false, true, true, false, true, false, true)
         val activeDaysRow2 = listOf(false, true, true, false, true, false, true)
 
@@ -304,7 +304,7 @@ private fun LastSessionCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CardTitle("Last Session", Modifier.weight(1f))
+            CardTitle("Última Sesión", Modifier.weight(1f))
             Text(
                 text = when {
                     session != null -> formatSessionDate(session.date)
@@ -343,9 +343,9 @@ private fun LastSessionCard(
                 modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
             )
 
-            StatBox(Icons.Filled.FitnessCenter, "TOTAL VOLUME", formatVolumeKg(session.totalVolumeKg))
+            StatBox(Icons.Filled.FitnessCenter, "VOLUMEN TOTAL", formatVolumeKg(session.totalVolumeKg))
             Spacer(Modifier.height(8.dp))
-            StatBox(Icons.Filled.Schedule, "DURATION", "${session.durationMins} min")
+            StatBox(Icons.Filled.Schedule, "DURACIÓN", "${session.durationMins} min")
             Spacer(Modifier.height(8.dp))
             StatBox(
                 icon = Icons.Filled.List,
@@ -356,7 +356,7 @@ private fun LastSessionCard(
 
         Spacer(Modifier.height(14.dp))
         SecondaryButton(
-            text = "VIEW LOG \u2192",
+            text = "VER REGISTRO \u2192",
             onClick = { onNavigateToRoutines() },
             minHeight = 46.dp
         )
@@ -387,13 +387,13 @@ private fun AlertBanner() {
         )
         Column {
             Text(
-                text = "Heavy Squat Day Tomorrow",
+                text = "Día de Sentadilla Pesada Mañana",
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = "Scheduled RPE 9 singles. Prioritize sleep & recovery.",
+                text = "Series simples de RPE 9 programadas. Prioriza el sueño y la recuperación.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )

@@ -6,7 +6,7 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
 /**
- * RF20 — Repositorio de ejercicios personalizados.
+ * Repositorio de ejercicios personalizados.
  *
  * Persistencia: subcolección privada /users/{userId}/custom_exercises/{exerciseId}.
  * Firestore mantiene su caché offline por defecto, por lo que cada ejercicio queda

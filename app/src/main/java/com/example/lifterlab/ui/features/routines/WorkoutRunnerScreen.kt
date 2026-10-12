@@ -1,17 +1,18 @@
 package com.example.lifterlab.ui.features.routines
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,27 +36,26 @@ import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.repository.ActiveSessionRepository
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.CustomExerciseRepository
+import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.toast
-import com.example.lifterlab.ui.components.CardCaption
-import com.example.lifterlab.ui.components.ErrorText
-import com.example.lifterlab.ui.components.LifterCard
-import com.example.lifterlab.ui.components.PrimaryButton
-import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.features.warmup.WarmupCalculatorDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * RF04 — Modo Gimnasio: registro de series, peso y repeticiones.
- * RF05 — Esfuerzo percibido: al completar una serie se despliega el selector de RPE
+ * Modo Gimnasio: registro de series, peso y repeticiones.
+ * Esfuerzo percibido: al completar una serie se despliega el selector de RPE
  * (@6.0 a @10.0) y el valor viaja como campo numérico en cada serie.
- * RF23 — Reordenamiento: los ejercicios se pueden reordenar por arrastre o con las
+ * Reordenamiento: los ejercicios se pueden reordenar por arrastre o con las
  * flechas Subir/Bajar; el nuevo orden se guarda en la sesión activa e historial.
  * Genera la sesión activa en el estado local del dispositivo, muestra cada serie con la
  * referencia de la sesión anterior y, al cerrar, consolida el tonelaje y guarda la
  * sesión en /users/{userId}/workout_sessions.
+ *
+ * La interfaz sigue la estética de Ejemplo.html ("Live Training").
  */
 @Composable
 fun WorkoutRunnerScreen(
@@ -70,6 +70,7 @@ fun WorkoutRunnerScreen(
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     val activeSessionRepository = remember(context) { ActiveSessionRepository(context) }
     val customExerciseRepository = remember { CustomExerciseRepository() }
+    val profileRepository = remember { ProfileRepository() }
     val scope = rememberCoroutineScope()
 
     var activeRoutine by remember { mutableStateOf(routine) }
@@ -78,7 +79,11 @@ fun WorkoutRunnerScreen(
     var showAddExerciseDialog by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
 
-    // Sesión activa en curso (RF04: estado local del dispositivo).
+    // Calculadora de Aproximación: peso de la barra base desde el perfil.
+    var showWarmupCalculator by remember { mutableStateOf(false) }
+    var baseBarWeightKg by remember { mutableStateOf(20.0) }
+
+    // Sesión activa en curso: estado local del dispositivo.
     var startedAt by remember { mutableStateOf(System.currentTimeMillis()) }
     var sesionReanudada by remember { mutableStateOf(false) }
     var ahora by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -86,7 +91,7 @@ fun WorkoutRunnerScreen(
     // Referencia de la sesión anterior para las tarjetas de series.
     var referenciaPrevia by remember { mutableStateOf<Map<String, List<ExerciseSet>>>(emptyMap()) }
 
-    // RF20: ejercicios propios del atleta, reutilizables durante el Modo Gimnasio.
+    // ejercicios propios del atleta, reutilizables durante el Modo Gimnasio.
     var customExercises by remember { mutableStateOf<List<CustomExercise>>(emptyList()) }
 
     suspend fun persistirSesion() {
@@ -115,6 +120,11 @@ fun WorkoutRunnerScreen(
             val propios = withContext(Dispatchers.IO) { customExerciseRepository.getCustomExercises(userId) }
             propios.onSuccess { customExercises = it }
 
+            val perfil = withContext(Dispatchers.IO) { profileRepository.getProfile(userId) }
+            perfil.onSuccess { profile ->
+                if (profile.baseBarWeightKg > 0) baseBarWeightKg = profile.baseBarWeightKg
+            }
+
             val guardada = withContext(Dispatchers.IO) { activeSessionRepository.getActiveSession() }
             guardada.onSuccess { saved ->
                 if (saved != null && saved.matchesRoutine(routine, isExpress)) {
@@ -139,137 +149,148 @@ fun WorkoutRunnerScreen(
     val completedSets = activeRoutine.exercises.sumOf { ex -> ex.sets.count { it.isCompleted } }
     val duracionMins = ((ahora - startedAt) / 60000L).toInt().coerceAtLeast(0)
 
-    // RF23 — Reordenar en vivo el orden de ejecución de los ejercicios de la sesión.
+    // Reordenar en vivo el orden de ejecución de los ejercicios de la sesión.
     val dragState = rememberExerciseDragState { fromIndex, toIndex ->
         actualizarSesion { r -> moveExercise(r, fromIndex, toIndex) }
     }
     LaunchedEffect(activeRoutine.exercises.size) {
-        dragState.syncSize(activeRoutine.   exercises.size)
+        dragState.syncSize(activeRoutine.exercises.size)
     }
 
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
-        ) {
-            Text(
-                text = "← Volver",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.clickable { onBack() }
-            )
+    Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
-            Text(
-                text = if (isExpress) "Rutina Express" else activeRoutine.name,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            RoutineTopBar(onBack = onBack)
 
-            Text(
-                text = if (isExpress)
-                    "Modo libre: agrega ejercicios y al terminar solo se guardan los datos de la sesión."
-                else
-                    "Registra cada serie. Los cambios no modifican la rutina guardada.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
-            )
-
-            Text(
-                text = "$completedSets ${if (completedSets == 1) "serie completada" else "series completadas"} • ${formatElapsed(duracionMins)}",
-                color = MaterialTheme.colorScheme.tertiary,
-                fontSize = 13.sp,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            if (sesionReanudada) {
-                LifterCard(Modifier.padding(bottom = 8.dp)) {
-                    CardCaption("SESIÓN EN CURSO GUARDADA EN EL DISPOSITIVO")
-                    Text(
-                        text = "Retomaste el entrenamiento donde lo dejaste.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
-                    )
-                    SecondaryButton(
-                        text = "Descartar y Empezar de Cero",
-                        onClick = {
-                            scope.launch {
-                                withContext(Dispatchers.IO) { activeSessionRepository.clearActiveSession() }
-                                activeRoutine = routine
-                                startedAt = System.currentTimeMillis()
-                                sesionReanudada = false
-                                persistirSesion()
-                                context.toast("Sesión anterior descartada")
-                            }
-                        },
-                        minHeight = 44.dp
-                    )
-                }
-            }
-
-            activeRoutine.exercises.forEachIndexed { exIndex, exercise ->
-                ReorderableExerciseItem(dragState, exIndex) {
-                    ExerciseCard(
-                        exercise = exercise,
-                        reference = referenciaPrevia[exercise.name].orEmpty(),
-                        gymMode = true,
-                        isDragging = dragState.isDragging(exIndex),
-                        dragHandleModifier = Modifier.dragHandleFor(dragState, exIndex),
-                        canMoveUp = exIndex > 0,
-                        canMoveDown = exIndex < activeRoutine.exercises.lastIndex,
-                        onMoveUp = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex - 1) } },
-                        onMoveDown = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex + 1) } },
-                        onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
-                            actualizarSesion { r -> updateSetData(r, exIndex, setIndex, weightKg, reps, rpe, isCompleted) }
-                        },
-                        onAddSet = {
-                            actualizarSesion { r -> addSetToExercise(r, exIndex) }
-                        },
-                        onDeleteExercise = {
-                            actualizarSesion { r -> removeExercise(r, exIndex) }
-                        }
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-            SecondaryButton(
-                text = "+ Agregar Ejercicio",
-                onClick = { showAddExerciseDialog = true },
-                minHeight = 48.dp
-            )
-
-            LifterCard(Modifier.padding(top = 16.dp)) {
-                CardCaption("VOLUMEN COMPLETADO")
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 18.dp)
+                    .padding(bottom = 104.dp)
+            ) {
                 Text(
-                    text = volumenCompletado,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = FontFamily.Monospace,
+                    text = if (isExpress) "Rutina Express" else activeRoutine.name,
+                    color = RoutineSkin.OnSurface,
+                    fontSize = 27.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 32.sp
+                )
+
+                Text(
+                    text = if (isExpress)
+                        "Modo libre: agrega ejercicios y al terminar solo se guardan los datos de la sesión."
+                    else
+                        "",
+                    color = RoutineSkin.OnSurfaceVariant,
+                    fontSize = 13.sp,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-            }
 
-            if (mensajeError.isNotEmpty()) {
+                Text(
+                    text = "$completedSets ${if (completedSets == 1) "serie completada" else "series completadas"} • ${formatElapsed(duracionMins)}",
+                    color = RoutineSkin.Tertiary,
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                if (sesionReanudada) {
+                    SteelCard(Modifier.padding(top = 12.dp)) {
+                        MonoLabel("Sesión en curso guardada en el dispositivo", color = RoutineSkin.PrimaryText)
+                        Text(
+                            text = "Retomaste el entrenamiento donde lo dejaste.",
+                            color = RoutineSkin.OnSurfaceVariant,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
+                        )
+                        SteelOutlineButton(
+                            text = "Descartar y empezar de cero",
+                            contentColor = RoutineSkin.OnSurfaceVariant,
+                            onClick = {
+                                scope.launch {
+                                    withContext(Dispatchers.IO) { activeSessionRepository.clearActiveSession() }
+                                    activeRoutine = routine
+                                    startedAt = System.currentTimeMillis()
+                                    sesionReanudada = false
+                                    persistirSesion()
+                                    context.toast("Sesión anterior descartada")
+                                }
+                            }
+                        )
+                    }
+                }
+
+                activeRoutine.exercises.forEachIndexed { exIndex, exercise ->
+                    ReorderableExerciseItem(dragState, exIndex) {
+                        ExerciseCard(
+                            exercise = exercise,
+                            reference = referenciaPrevia[exercise.name].orEmpty(),
+                            gymMode = true,
+                            isDragging = dragState.isDragging(exIndex),
+                            dragHandleModifier = Modifier.dragHandleFor(dragState, exIndex),
+                            canMoveUp = exIndex > 0,
+                            canMoveDown = exIndex < activeRoutine.exercises.lastIndex,
+                            onMoveUp = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex - 1) } },
+                            onMoveDown = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex + 1) } },
+                            onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
+                                actualizarSesion { r -> updateSetData(r, exIndex, setIndex, weightKg, reps, rpe, isCompleted) }
+                            },
+                            onAddSet = {
+                                actualizarSesion { r -> addSetToExercise(r, exIndex) }
+                            },
+                            onDeleteExercise = {
+                                actualizarSesion { r -> removeExercise(r, exIndex) }
+                            }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+                SteelOutlineButton(
+                    text = "Agregar ejercicio",
+                    onClick = { showAddExerciseDialog = true },
+                    leadingIcon = Icons.Filled.Add
+                )
+
                 Spacer(Modifier.height(12.dp))
-                ErrorText(mensajeError, Modifier.fillMaxWidth())
-            }
+                SteelOutlineButton(
+                    text = "Calculadora de aproximación",
+                    contentColor = RoutineSkin.OnSurfaceVariant,
+                    onClick = { showWarmupCalculator = true },
+                    leadingIcon = Icons.Filled.Calculate
+                )
 
-            Spacer(Modifier.height(20.dp))
-            PrimaryButton(
-                text = if (guardando) "Guardando..." else "Terminar Entrenamiento",
-                onClick = { showFinishDialog = true },
-                enabled = !guardando
-            )
+                SteelCard(Modifier.padding(top = 20.dp)) {
+                    MonoLabel("Volumen completado", color = RoutineSkin.PrimaryText)
+                    Text(
+                        text = volumenCompletado,
+                        color = RoutineSkin.PrimaryContainer,
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                if (mensajeError.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = mensajeError,
+                        color = RoutineSkin.Error,
+                        fontSize = 14.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(Modifier.height(28.dp))
+                AccentWideButton(
+                    text = if (guardando) "Guardando..." else "Finalizar Entrenamiento",
+                    onClick = { showFinishDialog = true },
+                    enabled = !guardando,
+                    trailingIcon = Icons.Filled.Flag
+                )
+            }
         }
     }
 
@@ -281,6 +302,18 @@ fun WorkoutRunnerScreen(
                 showAddExerciseDialog = false
             },
             onDismiss = { showAddExerciseDialog = false }
+        )
+    }
+
+    if (showWarmupCalculator) {
+        WarmupCalculatorDialog(
+            exerciseNames = activeRoutine.exercises.map { it.name },
+            baseBarWeightKg = baseBarWeightKg,
+            onApply = { exIndex, steps ->
+                actualizarSesion { r -> applyWarmupPlan(r, exIndex, steps) }
+                context.toast("Series de aproximación agregadas al ejercicio")
+            },
+            onDismiss = { showWarmupCalculator = false }
         )
     }
 
@@ -299,7 +332,7 @@ fun WorkoutRunnerScreen(
                     Spacer(Modifier.height(10.dp))
                     Text(
                         text = "$completedSets series • $volumenCompletado • ${formatElapsed(duracionMins)}",
-                        color = MaterialTheme.colorScheme.tertiary,
+                        color = RoutineSkin.Tertiary,
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace
                     )

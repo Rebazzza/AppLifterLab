@@ -1,0 +1,311 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>LifterLab - Live Training</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;800;900&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed-variant": "#6e3900",
+                      "primary-container": "#8083ff",
+                      "on-tertiary": "#003824",
+                      "primary": "#c0c1ff",
+                      "surface-container-low": "#1c1b1d",
+                      "surface-container-highest": "#353437",
+                      "secondary-fixed": "#ffdcc3",
+                      "error-container": "#93000a",
+                      "on-primary": "#1000a9",
+                      "on-primary-container": "#0d0096",
+                      "on-tertiary-fixed-variant": "#005236",
+                      "background": "#131315",
+                      "tertiary": "#4edea3",
+                      "inverse-primary": "#494bd6",
+                      "tertiary-fixed-dim": "#4edea3",
+                      "surface": "#131315",
+                      "outline-variant": "#464554",
+                      "on-background": "#e5e1e4",
+                      "on-surface": "#e5e1e4",
+                      "outline": "#908fa0",
+                      "on-tertiary-fixed": "#002113",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-container": "#00885d",
+                      "inverse-on-surface": "#313032",
+                      "error": "#ffb4ab",
+                      "secondary-fixed-dim": "#ffb77d",
+                      "surface-dim": "#131315",
+                      "on-primary-fixed": "#07006c",
+                      "inverse-surface": "#e5e1e4",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "on-error": "#690005",
+                      "surface-variant": "#353437",
+                      "on-secondary": "#4d2600",
+                      "surface-container-high": "#2a2a2c",
+                      "surface-tint": "#c0c1ff",
+                      "primary-fixed-dim": "#c0c1ff",
+                      "surface-container": "#201f22",
+                      "tertiary-fixed": "#6ffbbe",
+                      "on-surface-variant": "#c7c4d7",
+                      "secondary-container": "#d97707",
+                      "surface-bright": "#39393b",
+                      "on-tertiary-container": "#000703",
+                      "on-secondary-fixed": "#2f1500",
+                      "secondary": "#ffb77d",
+                      "on-secondary-container": "#432100",
+                      "surface-container-lowest": "#0e0e10",
+                      "primary-fixed": "#e1e0ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "1rem",
+                      "stack-loose": "2rem",
+                      "component-gap": "0.75rem",
+                      "stack-tight": "0.25rem",
+                      "grid-margin": "1.5rem"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "label-mono": ["JetBrains Mono"],
+                      "body-md": ["Inter"],
+                      "display-stat": ["Chivo"],
+                      "headline-lg-mobile": ["Chivo"],
+                      "headline-lg": ["Chivo"],
+                      "headline-md": ["Chivo"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "label-mono": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display-stat": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "900"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "800"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        /* Custom styles for glowing effects and inputs */
+        .glow-active {
+            box-shadow: 0px 0px 15px rgba(192, 193, 255, 0.3);
+        }
+        .glow-hover:hover {
+            box-shadow: 0px 0px 15px rgba(192, 193, 255, 0.3);
+        }
+        .input-dark {
+            background-color: #09090b;
+            border: 1px solid #242427;
+        }
+        .input-dark:focus {
+            border-color: #c0c1ff;
+            box-shadow: 0px 0px 15px rgba(192, 193, 255, 0.3);
+            outline: none;
+        }
+        .steel-card {
+            background-color: #141417;
+            border: 1px solid #242427;
+        }
+        .row-alt:nth-child(even) {
+            background-color: rgba(36, 36, 39, 0.5);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-safe antialiased selection:bg-primary selection:text-on-primary">
+<!-- Top App Bar -->
+<header class="bg-background/80 backdrop-blur-xl docked full-width top-0 z-50 border-b border-outline-variant flat no shadows">
+<div class="flex items-center justify-between px-gutter w-full h-16">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary hover:text-primary transition-colors cursor-pointer" data-icon="monitoring">monitoring</span>
+<h1 class="font-headline-md text-headline-md font-black tracking-tighter text-primary uppercase">LifterLab</h1>
+</div>
+<!-- Contextual Actions -->
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-4xl mx-auto pt-6 pb-24 px-gutter md:px-grid-margin space-y-stack-loose">
+<!-- Rest Timer Widget (Floating / Prominent) -->
+<section class="sticky top-20 z-40 w-full max-w-sm mx-auto">
+<div class="steel-card rounded-xl p-4 flex flex-col items-center justify-center space-y-4 shadow-lg backdrop-blur-md bg-opacity-90 glow-active">
+<div class="flex items-center justify-between w-full">
+<span class="text-on-surface-variant font-label-mono uppercase tracking-widest text-xs">Rest Timer</span>
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="timer">timer</span>
+</div>
+<div class="flex items-center justify-center space-x-6">
+<button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-all border border-outline-variant active:scale-95">
+<span class="font-label-mono text-label-mono">-30</span>
+</button>
+<div class="font-display-stat text-display-stat text-primary font-black tabular-nums tracking-tighter">
+                        01:45
+                    </div>
+<button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-all border border-outline-variant active:scale-95">
+<span class="font-label-mono text-label-mono">+30</span>
+</button>
+</div>
+<button class="w-full py-2 bg-surface-container text-on-surface font-label-mono text-sm rounded-lg hover:bg-surface-container-high border border-outline-variant transition-colors">
+                    Skip Rest
+                </button>
+</div>
+</section>
+<!-- Current Exercise Module -->
+<section class="space-y-component-gap">
+<!-- Header -->
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Back Squat</h2>
+<p class="text-on-surface-variant font-body-md text-sm">Target: 3 x 5 @ RPE 8</p>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:text-primary transition-colors border border-outline-variant">
+<span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:text-primary transition-colors border border-outline-variant">
+<span class="material-symbols-outlined text-sm" data-icon="swap_horiz">swap_horiz</span>
+</button>
+</div>
+</div>
+<!-- The Log (Data Table) -->
+<div class="steel-card rounded-xl overflow-hidden">
+<!-- Table Header -->
+<div class="grid grid-cols-[3fr_3fr_3fr_3fr_2fr] gap-2 p-3 bg-surface-container-highest border-b border-outline-variant text-on-surface-variant font-label-mono text-xs uppercase tracking-wider text-center items-center">
+<div>Set</div>
+<div>KG</div>
+<div>Reps</div>
+<div>RPE</div>
+<div>Done</div>
+</div>
+<!-- Table Body -->
+<div class="flex flex-col">
+<!-- Set 1 (Completed) -->
+<div class="grid grid-cols-[3fr_3fr_3fr_3fr_2fr] gap-2 p-3 border-b border-outline-variant items-center text-center row-alt">
+<div class="font-label-mono text-sm text-on-surface-variant">1</div>
+<div><input class="input-dark w-16 text-center rounded-md py-1 font-label-mono text-primary text-sm" type="number" value="140"></div>
+<div><input class="input-dark w-12 text-center rounded-md py-1 font-label-mono text-primary text-sm" type="number" value="5"></div>
+<div>
+<select class="input-dark w-16 text-center rounded-md py-1 font-label-mono text-primary text-sm appearance-none cursor-pointer">
+<option value="7">7</option>
+<option value="7.5">7.5</option>
+<option selected="" value="8">8</option>
+<option value="8.5">8.5</option>
+<option value="9">9</option>
+</select>
+</div>
+<div class="flex justify-center">
+<button class="w-8 h-8 rounded-lg bg-tertiary/20 border border-tertiary flex items-center justify-center text-tertiary glow-active transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+</div>
+</div>
+<!-- Set 2 (Active) -->
+<div class="grid grid-cols-[3fr_3fr_3fr_3fr_2fr] gap-2 p-3 border-b border-outline-variant border-l-4 border-l-primary bg-surface-container-low items-center text-center glow-active relative">
+<div class="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+<div class="font-label-mono text-sm text-primary font-bold z-10">2</div>
+<div class="z-10"><input class="input-dark w-16 text-center rounded-md py-1 font-label-mono text-on-surface text-sm focus:text-primary" type="number" value="145"></div>
+<div class="z-10"><input class="input-dark w-12 text-center rounded-md py-1 font-label-mono text-on-surface text-sm focus:text-primary" type="number" value="5"></div>
+<div class="z-10">
+<select class="input-dark w-16 text-center rounded-md py-1 font-label-mono text-on-surface text-sm appearance-none cursor-pointer focus:text-primary">
+<option value="7">7</option>
+<option value="7.5">7.5</option>
+<option selected="" value="8">8</option>
+<option value="8.5">8.5</option>
+<option value="9">9</option>
+</select>
+</div>
+<div class="flex justify-center z-10">
+<button class="w-8 h-8 rounded-lg bg-surface-container border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-tertiary hover:border-tertiary transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="check">check</span>
+</button>
+</div>
+</div>
+<!-- Set 3 (Pending) -->
+<div class="grid grid-cols-[3fr_3fr_3fr_3fr_2fr] gap-2 p-3 items-center text-center row-alt opacity-60">
+<div class="font-label-mono text-sm text-on-surface-variant">3</div>
+<div><input class="input-dark w-16 text-center rounded-md py-1 font-label-mono text-on-surface text-sm placeholder:text-outline-variant" placeholder="145" type="number"></div>
+<div><input class="input-dark w-12 text-center rounded-md py-1 font-label-mono text-on-surface text-sm placeholder:text-outline-variant" placeholder="5" type="number"></div>
+<div>
+<select class="input-dark w-16 text-center rounded-md py-1 font-label-mono text-on-surface text-sm appearance-none cursor-pointer">
+<option disabled="" selected="" value="">-</option>
+<option value="7">7</option>
+<option value="7.5">7.5</option>
+<option value="8">8</option>
+<option value="8.5">8.5</option>
+<option value="9">9</option>
+</select>
+</div>
+<div class="flex justify-center">
+<button class="w-8 h-8 rounded-lg bg-surface border border-outline-variant flex items-center justify-center text-on-surface-variant transition-all cursor-not-allowed">
+<span class="material-symbols-outlined text-sm" data-icon="check">check</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Add Set Action -->
+<button class="w-full py-3 bg-surface border-t border-outline-variant text-primary font-label-mono text-xs uppercase tracking-wider hover:bg-surface-container transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                    Add Set
+                </button>
+</div>
+</section>
+<!-- Previous Performance Context (Collapsed) -->
+<section class="steel-card rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="history">history</span>
+<span class="font-body-md text-sm text-on-surface-variant">Last time: 140kg x 5 @ 8.5</span>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="expand_more">expand_more</span>
+</section>
+<!-- Finish Workout Action -->
+<div class="pt-8 w-full flex justify-center">
+<button class="w-full max-w-md bg-inverse-primary text-on-primary font-headline-md text-lg py-4 rounded-xl shadow-lg glow-hover transition-all active:scale-95 flex items-center justify-center gap-2 font-bold tracking-tight">
+                Finalizar Entrenamiento
+                <span class="material-symbols-outlined" data-icon="flag">flag</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Hidden on md and above) -->
+<nav class="md:hidden bg-surface-container-lowest/80 backdrop-blur-xl fixed bottom-0 w-full z-50 pb-safe border-t border-outline-variant shadow-[0px_-4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex justify-around items-center h-16 w-full max-w-md mx-auto">
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary hover:opacity-100 transition-all Active: scale-95 duration-100 w-16">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-mono text-label-mono text-[10px] mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary font-bold scale-110 transition-transform hover:text-primary hover:opacity-100 Active: scale-95 duration-100 w-16 relative">
+<div class="absolute -top-1 w-1 h-1 bg-primary rounded-full"></div>
+<span class="material-symbols-outlined" data-icon="fitness_center" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
+<span class="font-label-mono text-label-mono text-[10px] mt-1">Routines</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary hover:opacity-100 transition-all Active: scale-95 duration-100 w-16">
+<span class="material-symbols-outlined" data-icon="architecture">architecture</span>
+<span class="font-label-mono text-label-mono text-[10px] mt-1">Tools</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary hover:opacity-100 transition-all Active: scale-95 duration-100 w-16">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-mono text-label-mono text-[10px] mt-1">History</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary hover:opacity-100 transition-all Active: scale-95 duration-100 w-16">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-mono text-label-mono text-[10px] mt-1">Profile</span>
+</button>
+</div>
+</nav>
+</body></html>

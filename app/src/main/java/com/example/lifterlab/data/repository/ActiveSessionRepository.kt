@@ -10,7 +10,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * RF04 — Persistencia local de la sesión activa ("Modo Gimnasio").
+ * Persistencia local de la sesión activa ("Modo Gimnasio").
  *
  * Guarda una única sesión en curso en las preferencias del dispositivo para que el
  * atleta pueda cerrar la app y retomarla sin perder las series ya registradas.

@@ -1,9 +1,9 @@
 package com.example.lifterlab.data.model
 
 /**
- * RF04 — Sesión de entrenamiento activa.
+ * Sesión de entrenamiento activa.
  *
- * Se genera al iniciar una plantilla de rutina (RF03) y se conserva en el estado local
+ * Se genera al iniciar una plantilla de rutina y se conserva en el estado local
  * del dispositivo para poder retomarla si la app se cierra a mitad del entrenamiento.
  * Al finalizar se consolida en un [WorkoutSession] que va al historial del usuario.
  */

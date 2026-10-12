@@ -59,6 +59,9 @@ import com.example.lifterlab.ui.formatKg
 import com.example.lifterlab.ui.formatSessionDate
 import com.example.lifterlab.ui.formatVolumeKg
 import com.example.lifterlab.ui.progressFraction
+import com.example.lifterlab.ui.theme.ColorBench
+import com.example.lifterlab.ui.theme.ColorDeadlift
+import com.example.lifterlab.ui.theme.ColorSquat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -73,7 +76,7 @@ fun DashboardScreen(
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     var profile by remember { mutableStateOf(UserProfile()) }
 
-    // RF04: resumen de la ultima sesion registrada por el atleta en el historial.
+    // resumen de la ultima sesion registrada por el atleta en el historial.
     var lastSession by remember { mutableStateOf<WorkoutSession?>(null) }
     var sesionCargada by remember { mutableStateOf(false) }
 
@@ -140,7 +143,8 @@ fun DashboardScreen(
                 weightText = formatKg(profile.squat1RM),
                 goalText = calculateGoalPercent(profile.squat1RM, profile.squatGoalKg),
                 fraction = progressFraction(profile.squat1RM, profile.squatGoalKg),
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 16.dp),
+                accentColor = ColorSquat
             )
             SbdStatCard(
                 title = "Press Banca",
@@ -149,7 +153,8 @@ fun DashboardScreen(
                 weightText = formatKg(profile.bench1RM),
                 goalText = calculateGoalPercent(profile.bench1RM, profile.benchGoalKg),
                 fraction = progressFraction(profile.bench1RM, profile.benchGoalKg),
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 16.dp),
+                accentColor = ColorBench
             )
             SbdStatCard(
                 title = "Peso Muerto",
@@ -158,7 +163,8 @@ fun DashboardScreen(
                 weightText = formatKg(profile.deadlift1RM),
                 goalText = calculateGoalPercent(profile.deadlift1RM, profile.deadliftGoalKg),
                 fraction = progressFraction(profile.deadlift1RM, profile.deadliftGoalKg),
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 16.dp),
+                accentColor = ColorDeadlift
             )
 
             ConsistencyCard(streakDays = profile.streakDays)

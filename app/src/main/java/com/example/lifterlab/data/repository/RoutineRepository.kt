@@ -34,7 +34,7 @@ class RoutineRepository(
     /**
      * Guarda o actualiza una plantilla de rutina en /users/{userId}/routines/{routineId}.
      * El arreglo de ejercicios se persiste en el orden vigente, con executionOrder
-     * secuencial (RF23).
+     * secuencial.
      * Retorna el ID del documento guardado.
      */
     suspend fun saveRoutine(userId: String, routine: Routine): Result<String> {
@@ -59,7 +59,7 @@ class RoutineRepository(
         }
     }
 
-    /** RF23 — executionOrder secuencial (1..n) según el orden actual de ejecución. */
+    /** executionOrder secuencial (1..n) según el orden actual de ejecución. */
     private fun renumberExecutionOrder(routine: Routine): Routine = routine.copy(
         exercises = routine.exercises.mapIndexed { index, exercise ->
             if (exercise.executionOrder == index + 1) exercise

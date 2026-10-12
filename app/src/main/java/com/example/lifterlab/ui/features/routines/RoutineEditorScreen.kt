@@ -1,8 +1,8 @@
 package com.example.lifterlab.ui.features.routines
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,19 +38,19 @@ import com.example.lifterlab.data.model.CustomExercise
 import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.CustomExerciseRepository
+import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.toast
-import com.example.lifterlab.ui.components.CardCaption
-import com.example.lifterlab.ui.components.ErrorText
-import com.example.lifterlab.ui.components.LifterCard
-import com.example.lifterlab.ui.components.PrimaryButton
-import com.example.lifterlab.ui.components.ScreenSubtitle
-import com.example.lifterlab.ui.components.ScreenTitle
-import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.features.warmup.WarmupCalculatorDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/**
+ * Crear / Editar una rutina. La interfaz sigue la estética de Ejemplo.html
+ * ("steel cards", campos input-dark y botón de acento), conservando toda la
+ * funcionalidad previa (nombre, series, RPE, reordenamiento, calculadora, etc.).
+ */
 @Composable
 fun RoutineEditorScreen(
     routine: Routine,
@@ -66,19 +69,29 @@ fun RoutineEditorScreen(
     var guardando by remember { mutableStateOf(false) }
     var showAddExerciseDialog by remember { mutableStateOf(false) }
 
-    // RF20: los ejercicios propios del atleta se muestran junto al catálogo global al armar la rutina.
+    // Calculadora de Aproximación disponible al armar la plantilla.
+    var showWarmupCalculator by remember { mutableStateOf(false) }
+    var baseBarWeightKg by remember { mutableStateOf(20.0) }
+    val profileRepository = remember { ProfileRepository() }
+
+    // los ejercicios propios del atleta se muestran junto al catálogo global al armar la rutina.
     var customExercises by remember { mutableStateOf<List<CustomExercise>>(emptyList()) }
 
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             val result = withContext(Dispatchers.IO) { customExerciseRepository.getCustomExercises(userId) }
             result.onSuccess { customExercises = it }
+
+            val perfil = withContext(Dispatchers.IO) { profileRepository.getProfile(userId) }
+            perfil.onSuccess { profile ->
+                if (profile.baseBarWeightKg > 0) baseBarWeightKg = profile.baseBarWeightKg
+            }
         }
     }
 
     val volume = calculateVolume(activeRoutine)
 
-    // RF23 — Reordenamiento por arrastre (drag-and-drop) y alternativa con flechas.
+    // Reordenamiento por arrastre (drag-and-drop) y alternativa con flechas.
     val dragState = rememberExerciseDragState { fromIndex, toIndex ->
         activeRoutine = moveExercise(activeRoutine, fromIndex, toIndex)
     }
@@ -86,108 +99,129 @@ fun RoutineEditorScreen(
         dragState.syncSize(activeRoutine.exercises.size)
     }
 
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
-        ) {
-            Text(
-                text = "← Volver",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.clickable { onBack() }
-            )
+    Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
+            RoutineTopBar(onBack = onBack)
 
-            ScreenTitle(if (routine.id.isBlank()) "Nueva Rutina" else "Editar Rutina", Modifier.padding(top = 8.dp))
-            ScreenSubtitle(
-                "Configura el nombre, ejercicios, series y repeticiones.",
-                Modifier.padding(top = 4.dp, bottom = 16.dp)
-            )
-
-            RoutineNameField(
-                value = activeRoutine.name,
-                onValueChange = { newName ->
-                    activeRoutine = activeRoutine.copy(name = newName)
-                }
-            )
-
-            activeRoutine.exercises.forEachIndexed { exIndex, exercise ->
-                ReorderableExerciseItem(dragState, exIndex) {
-                    ExerciseCard(
-                        exercise = exercise,
-                        isDragging = dragState.isDragging(exIndex),
-                        dragHandleModifier = Modifier.dragHandleFor(dragState, exIndex),
-                        canMoveUp = exIndex > 0,
-                        canMoveDown = exIndex < activeRoutine.exercises.lastIndex,
-                        onMoveUp = { activeRoutine = moveExercise(activeRoutine, exIndex, exIndex - 1) },
-                        onMoveDown = { activeRoutine = moveExercise(activeRoutine, exIndex, exIndex + 1) },
-                        onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
-                            activeRoutine = updateSetData(activeRoutine, exIndex, setIndex, weightKg, reps, rpe, isCompleted)
-                        },
-                        onAddSet = {
-                            activeRoutine = addSetToExercise(activeRoutine, exIndex)
-                        },
-                        onDeleteExercise = {
-                            activeRoutine = removeExercise(activeRoutine, exIndex)
-                        }
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-            SecondaryButton(
-                text = "+ Agregar Ejercicio",
-                onClick = { showAddExerciseDialog = true },
-                minHeight = 48.dp
-            )
-
-            LifterCard(Modifier.padding(top = 16.dp)) {
-                CardCaption("VOLUMEN ESTIMADO")
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 18.dp)
+                    .padding(bottom = 104.dp)
+            ) {
                 Text(
-                    text = volume,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = FontFamily.Monospace,
+                    text = if (routine.id.isBlank()) "Nueva Rutina" else "Editar Rutina",
+                    color = RoutineSkin.OnSurface,
+                    fontSize = 27.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 32.sp
+                )
+                Text(
+                    text = "Configura el nombre, ejercicios, series y repeticiones.",
+                    color = RoutineSkin.OnSurfaceVariant,
+                    fontSize = 13.sp,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-            }
 
-            if (mensajeError.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                ErrorText(mensajeError, Modifier.fillMaxWidth())
-            }
+                RoutineNameField(
+                    value = activeRoutine.name,
+                    onValueChange = { newName ->
+                        activeRoutine = activeRoutine.copy(name = newName)
+                    },
+                    modifier = Modifier.padding(top = 18.dp)
+                )
 
-            Spacer(Modifier.height(20.dp))
-            PrimaryButton(
-                text = if (guardando) "Guardando..." else "Guardar Rutina",
-                onClick = {
-                    guardando = true
-                    mensajeError = ""
-                    postGuardarRutina(
-                        userId = userId,
-                        routine = activeRoutine,
-                        scope = scope,
-                        context = context,
-                        routineRepository = routineRepository,
-                        onError = { msg ->
-                            guardando = false
-                            mensajeError = msg
-                        },
-                        onSuccess = { name ->
-                            guardando = false
-                            context.toast("¡Rutina '$name' guardada!")
-                            onSaved()
-                        }
+                activeRoutine.exercises.forEachIndexed { exIndex, exercise ->
+                    ReorderableExerciseItem(dragState, exIndex) {
+                        ExerciseCard(
+                            exercise = exercise,
+                            isDragging = dragState.isDragging(exIndex),
+                            dragHandleModifier = Modifier.dragHandleFor(dragState, exIndex),
+                            canMoveUp = exIndex > 0,
+                            canMoveDown = exIndex < activeRoutine.exercises.lastIndex,
+                            onMoveUp = { activeRoutine = moveExercise(activeRoutine, exIndex, exIndex - 1) },
+                            onMoveDown = { activeRoutine = moveExercise(activeRoutine, exIndex, exIndex + 1) },
+                            onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
+                                activeRoutine = updateSetData(activeRoutine, exIndex, setIndex, weightKg, reps, rpe, isCompleted)
+                            },
+                            onAddSet = {
+                                activeRoutine = addSetToExercise(activeRoutine, exIndex)
+                            },
+                            onDeleteExercise = {
+                                activeRoutine = removeExercise(activeRoutine, exIndex)
+                            }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+                SteelOutlineButton(
+                    text = "Agregar ejercicio",
+                    onClick = { showAddExerciseDialog = true },
+                    leadingIcon = Icons.Filled.Add
+                )
+
+                if (activeRoutine.exercises.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    SteelOutlineButton(
+                        text = "Calculadora de aproximación",
+                        contentColor = RoutineSkin.OnSurfaceVariant,
+                        onClick = { showWarmupCalculator = true },
+                        leadingIcon = Icons.Filled.Calculate
                     )
-                },
-                enabled = !guardando
-            )
+                }
+
+                SteelCard(Modifier.padding(top = 20.dp)) {
+                    MonoLabel("Volumen estimado", color = RoutineSkin.PrimaryText)
+                    Text(
+                        text = volume,
+                        color = RoutineSkin.PrimaryContainer,
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                if (mensajeError.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = mensajeError,
+                        color = RoutineSkin.Error,
+                        fontSize = 14.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(Modifier.height(28.dp))
+                AccentWideButton(
+                    text = if (guardando) "Guardando..." else "Guardar Rutina",
+                    onClick = {
+                        guardando = true
+                        mensajeError = ""
+                        postGuardarRutina(
+                            userId = userId,
+                            routine = activeRoutine,
+                            scope = scope,
+                            context = context,
+                            routineRepository = routineRepository,
+                            onError = { msg ->
+                                guardando = false
+                                mensajeError = msg
+                            },
+                            onSuccess = { name ->
+                                guardando = false
+                                context.toast("¡Rutina '$name' guardada!")
+                                onSaved()
+                            }
+                        )
+                    },
+                    enabled = !guardando,
+                    trailingIcon = Icons.Filled.Save
+                )
+            }
         }
     }
 
@@ -201,30 +235,45 @@ fun RoutineEditorScreen(
             onDismiss = { showAddExerciseDialog = false }
         )
     }
+
+    if (showWarmupCalculator) {
+        WarmupCalculatorDialog(
+            exerciseNames = activeRoutine.exercises.map { it.name },
+            baseBarWeightKg = baseBarWeightKg,
+            onApply = { exIndex, steps ->
+                activeRoutine = applyWarmupPlan(activeRoutine, exIndex, steps)
+                context.toast("Series de aproximación agregadas a la rutina")
+            },
+            onDismiss = { showWarmupCalculator = false }
+        )
+    }
 }
 
+/** Campo de nombre de la rutina con el estilo "input-dark" del Ejemplo.html. */
 @Composable
-private fun RoutineNameField(value: String, onValueChange: (String) -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .border(
-                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                RoundedCornerShape(12.dp)
-            )
-            .padding(16.dp)
-    ) {
-        Column(Modifier.fillMaxWidth()) {
+private fun RoutineNameField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SteelCard(modifier) {
+        MonoLabel("Nombre de la rutina", color = RoutineSkin.PrimaryText)
+
+        val fieldShape = RoundedCornerShape(8.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+                .background(RoutineSkin.InputBackground, fieldShape)
+                .border(BorderStroke(1.dp, RoutineSkin.SteelBorder), fieldShape)
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
                 singleLine = true,
-                textStyle = androidx.compose.ui.text.TextStyle(
-                    color = MaterialTheme.colorScheme.onBackground,
+                textStyle = TextStyle(
+                    color = RoutineSkin.OnSurface,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 ),
@@ -234,7 +283,7 @@ private fun RoutineNameField(value: String, onValueChange: (String) -> Unit) {
                         if (value.isEmpty()) {
                             Text(
                                 text = "Nombre de la Rutina...",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = RoutineSkin.OnSurfaceVariant.copy(alpha = 0.5f),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -243,16 +292,15 @@ private fun RoutineNameField(value: String, onValueChange: (String) -> Unit) {
                     }
                 }
             )
-            Text(
-                text = "✎ Editar nombre",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp)
-            )
         }
+
+        Text(
+            text = "✎ Editar nombre",
+            color = RoutineSkin.PrimaryText,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(top = 12.dp)
+        )
     }
 }
 

@@ -16,7 +16,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 
 /**
- * RF23 — Reordenamiento de ejercicios por arrastre (drag-and-drop).
+ * Reordenamiento de ejercicios por arrastre (drag-and-drop).
  *
  * Equivalente en Compose del par `ItemTouchHelper` + `ItemTouchHelper.Callback`: mide la
  * altura de cada tarjeta, sigue al dedo sobre el "drag handle" y, al cruzar media altura

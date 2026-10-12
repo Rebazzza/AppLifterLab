@@ -1,7 +1,7 @@
 package com.example.lifterlab.data.model
 
 /**
- * RF20 — Ejercicio personalizado dado de alta por el atleta.
+ * Ejercicio personalizado dado de alta por el atleta.
  * Se persiste en la subcolección privada /users/{userId}/custom_exercises/{exerciseId}.
  */
 data class CustomExercise(

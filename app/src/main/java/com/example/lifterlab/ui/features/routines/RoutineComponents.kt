@@ -8,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -17,19 +18,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,7 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -51,11 +50,17 @@ import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.model.CustomExercise
 import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.RoutineExercise
-import com.example.lifterlab.ui.components.LifterCard
-import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.theme.ColorBench
+import com.example.lifterlab.ui.theme.ColorDeadlift
+import com.example.lifterlab.ui.theme.ColorSquat
 import java.util.Locale
 import kotlin.math.abs
 
+/**
+ * Tarjeta de ejercicio del Ejemplo.html: encabezado con el nombre/objetivo y acciones,
+ * y debajo el registro (log) en forma de tabla "steel" con columnas Set / KG / Reps /
+ * RPE / Done y el botón Add Set al pie.
+ */
 @Composable
 fun ExerciseCard(
     exercise: RoutineExercise,
@@ -71,168 +76,193 @@ fun ExerciseCard(
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {}
 ) {
-    val cardShape = RoundedCornerShape(12.dp)
-    LifterCard(
-        Modifier
-            .padding(top = 16.dp)
-            .then(
-                if (isDragging) Modifier.shadow(
-                    elevation = 12.dp,
-                    shape = cardShape,
-                    clip = false,
-                    ambientColor = MaterialTheme.colorScheme.primary,
-                    spotColor = MaterialTheme.colorScheme.primary
-                ) else Modifier
-            )
-    ) {
+    Column(Modifier.padding(top = 24.dp)) {
+
+        // Encabezado del ejercicio.
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // RF23 — Agarre de arrastre: mantener presionado y mover reordena el ejercicio.
+            // Agarre de arrastre: mantener presionado y mover reordena el ejercicio.
             Box(
                 modifier = dragHandleModifier
-                    .padding(end = 4.dp)
-                    .size(width = 34.dp, height = 52.dp),
+                    .size(width = 30.dp, height = 44.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.DragHandle,
                     contentDescription = "Reordenar ${exercise.name}",
-                    tint = if (isDragging) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isDragging) RoutineSkin.PrimaryText else RoutineSkin.OnSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
 
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).padding(start = 6.dp)) {
                 Text(
                     text = exercise.name,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
+                    color = RoutineSkin.OnSurface,
+                    fontSize = 23.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 28.sp
                 )
                 Text(
                     text = exercise.targetMuscles.ifEmpty { "Objetivo: General" },
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.Monospace
+                    color = RoutineSkin.OnSurfaceVariant,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 2.dp)
                 )
+                // Indicador cromático SBD (ui-design-system.md §3): subrayado del
+                // movimiento básico cuando el ejercicio es Sentadilla / Banca / Peso Muerto.
+                sbdAccent(exercise.name)?.let { accent ->
+                    Box(
+                        Modifier
+                            .padding(top = 6.dp)
+                            .size(width = 30.dp, height = 3.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(accent)
+                    )
+                }
             }
 
             if (canMoveUp) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowUp,
+                RoundIconButton(
+                    icon = Icons.Filled.KeyboardArrowUp,
                     contentDescription = "Subir ${exercise.name}",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clickable { onMoveUp() }
-                        .padding(4.dp)
+                    onClick = onMoveUp
                 )
             }
+            if (canMoveUp && canMoveDown) Spacer(Modifier.size(6.dp))
             if (canMoveDown) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
+                RoundIconButton(
+                    icon = Icons.Filled.KeyboardArrowDown,
                     contentDescription = "Bajar ${exercise.name}",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clickable { onMoveDown() }
-                        .padding(4.dp)
+                    onClick = onMoveDown
                 )
             }
-
-            Icon(
-                imageVector = Icons.Filled.Delete,
+            if (canMoveUp || canMoveDown) Spacer(Modifier.size(6.dp))
+            RoundIconButton(
+                icon = Icons.Filled.Delete,
                 contentDescription = "Eliminar ejercicio",
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable { onDeleteExercise() }
-                    .padding(8.dp)
+                onClick = onDeleteExercise,
+                tint = RoutineSkin.Error
             )
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 14.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            HeaderCol("SERIE", 1.5f, TextAlign.Start)
-            HeaderCol("KG", 2.5f, TextAlign.Center)
-            HeaderCol("REPS", 2.5f, TextAlign.Center)
-            HeaderCol("RPE", 2f, TextAlign.Center)
-            HeaderCol("ESTADO", 2f, TextAlign.Center)
-        }
+        Spacer(Modifier.height(12.dp))
 
-        exercise.sets.forEachIndexed { setIndex, set ->
-            SetRow(
-                setIndex = setIndex,
-                set = set,
-                reference = reference.getOrNull(setIndex),
-                gymMode = gymMode,
-                onUpdate = onUpdateSet
-            )
-            Spacer(Modifier.height(6.dp))
-        }
+        // El log (tabla de series). Va de borde a borde: el encabezado y el pie
+        // pinta su propio fondo, por eso no lleva padding interno.
+        SteelCard(contentPadding = PaddingValues(0.dp)) {
+            LogHeaderRow()
 
-        Spacer(Modifier.height(14.dp))
-        SecondaryButton(
-            text = "+ Agregar Serie",
-            onClick = onAddSet,
-            minHeight = 42.dp
-        )
+            // La primera serie sin completar se resalta como la serie activa.
+            val activeIndex = exercise.sets.indexOfFirst { !it.isCompleted }
+
+            exercise.sets.forEachIndexed { setIndex, set ->
+                SetRow(
+                    setIndex = setIndex,
+                    set = set,
+                    reference = reference.getOrNull(setIndex),
+                    gymMode = gymMode,
+                    isActive = gymMode && setIndex == activeIndex,
+                    alternate = setIndex % 2 == 0,
+                    onUpdate = onUpdateSet
+                )
+                RowDivider()
+            }
+
+            AddSetFooter(onAddSet)
+        }
     }
 }
 
+/** Fila de títulos del log: Set / KG / Reps / RPE / Done. */
 @Composable
-fun RowScope.HeaderCol(text: String, weight: Float, textAlign: TextAlign) {
-    Text(
-        text = text,
-        modifier = Modifier.weight(weight),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium,
-        textAlign = textAlign
+private fun LogHeaderRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(RoutineSkin.SurfaceContainerHighest)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        MonoLabel("Set", Modifier.weight(ColSet), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+        MonoLabel("KG", Modifier.weight(ColKg), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+        Spacer(Modifier.size(6.dp))
+        MonoLabel("Reps", Modifier.weight(ColReps), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+        Spacer(Modifier.size(6.dp))
+        MonoLabel("RPE", Modifier.weight(ColRpe), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+        Spacer(Modifier.size(6.dp))
+        MonoLabel("Done", Modifier.weight(ColDone), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+    }
+    RowDivider()
+}
+
+private const val ColSet = 1.5f
+private const val ColKg = 2.6f
+private const val ColReps = 2.2f
+private const val ColRpe = 2.2f
+private const val ColDone = 1.7f
+
+@Composable
+private fun RowDivider() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(RoutineSkin.OutlineVariant.copy(alpha = 0.5f))
     )
 }
 
+/**
+ * Fila de una serie: número, peso, repeticiones, RPE y estado. Conserva toda la
+ * lógica previa (actualización de campos, marcado de completado) y el resumen de la
+ * sesión anterior.
+ */
 @Composable
 fun SetRow(
     setIndex: Int,
     set: ExerciseSet,
     reference: ExerciseSet? = null,
     gymMode: Boolean = false,
+    isActive: Boolean = false,
+    alternate: Boolean = false,
     onUpdate: (Int, Double?, Int?, Double?, Boolean?) -> Unit
 ) {
-    var kgText by remember { mutableStateOf(if (set.weightKg > 0) set.weightKg.toString() else "") }
+    var kgText by remember { mutableStateOf(if (set.weightKg > 0) formatKg(set.weightKg) else "") }
     var repsText by remember { mutableStateOf(if (set.reps > 0) set.reps.toString() else "") }
-    var rpeText by remember { mutableStateOf(if (set.rpe > 0) set.rpe.toString() else "") }
+    var rpeText by remember { mutableStateOf(if (set.rpe > 0) formatKg(set.rpe) else "") }
     var completed by remember { mutableStateOf(set.isCompleted) }
+
+    val background = when {
+        isActive -> RoutineSkin.SurfaceContainerLow
+        alternate -> RoutineSkin.RowAlt
+        else -> Color.Transparent
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                RoundedCornerShape(12.dp)
-            )
+            .background(background)
+            .drawBehind {
+                if (isActive) {
+                    drawRect(
+                        color = RoutineSkin.Primary,
+                        size = Size(4.dp.toPx(), size.height)
+                    )
+                }
+            }
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         if (reference != null && (reference.weightKg > 0 || reference.reps > 0)) {
             Text(
-                text = "REF. SESIÓN ANTERIOR: ${formatKg(reference.weightKg)} kg × ${reference.reps}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "Última vez: ${formatKg(reference.weightKg)} kg × ${reference.reps}",
+                color = RoutineSkin.OnSurfaceVariant.copy(alpha = 0.7f),
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
+                modifier = Modifier.padding(start = 2.dp)
             )
+            Spacer(Modifier.height(6.dp))
         }
 
         Row(
@@ -241,80 +271,77 @@ fun SetRow(
         ) {
             Text(
                 text = "${set.setNumber}",
-                color = MaterialTheme.colorScheme.onBackground,
+                color = if (isActive) RoutineSkin.PrimaryText else RoutineSkin.OnSurfaceVariant,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                 fontFamily = FontFamily.Monospace,
                 textAlign = TextAlign.Start,
-                modifier = Modifier.weight(1.5f)
+                modifier = Modifier.weight(ColSet)
             )
 
-            InlineNumberField(
+            DarkNumberField(
                 value = kgText,
                 onValueChange = { v ->
                     kgText = v
                     onUpdate(setIndex, v.toDoubleOrNull() ?: 0.0, null, null, null)
                 },
                 hint = "0",
-                color = MaterialTheme.colorScheme.onBackground,
-                weight = 2.5f
+                weight = ColKg,
+                textColor = if (set.isCompleted) RoutineSkin.PrimaryText else RoutineSkin.OnSurface
             )
 
-            InlineNumberField(
+            Spacer(Modifier.size(6.dp))
+
+            DarkNumberField(
                 value = repsText,
                 onValueChange = { v ->
                     repsText = v
                     onUpdate(setIndex, null, v.toIntOrNull() ?: 0, null, null)
                 },
                 hint = "0",
-                color = MaterialTheme.colorScheme.onBackground,
-                weight = 2.5f,
-                keyboardType = KeyboardType.Number
+                weight = ColReps,
+                keyboardType = KeyboardType.Number,
+                textColor = if (set.isCompleted) RoutineSkin.PrimaryText else RoutineSkin.OnSurface
             )
 
+            Spacer(Modifier.size(6.dp))
+
             if (gymMode) {
-                Text(
+                DarkValueBox(
                     text = rpeLabel(set.rpe),
-                    color = if (set.rpe > 0) MaterialTheme.colorScheme.secondary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = FontFamily.Monospace,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(2f)
+                    weight = ColRpe,
+                    textColor = if (set.rpe > 0) RoutineSkin.Secondary else RoutineSkin.OnSurfaceVariant
                 )
             } else {
-                InlineNumberField(
+                DarkNumberField(
                     value = rpeText,
                     onValueChange = { v ->
                         rpeText = v
                         onUpdate(setIndex, null, null, v.toDoubleOrNull() ?: 0.0, null)
                     },
                     hint = "8.0",
-                    color = MaterialTheme.colorScheme.secondary,
-                    weight = 2f
+                    weight = ColRpe,
+                    textColor = RoutineSkin.Secondary
                 )
             }
 
+            Spacer(Modifier.size(6.dp))
+
             Box(
-                modifier = Modifier.weight(2f),
+                modifier = Modifier.weight(ColDone),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (completed) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                    contentDescription = if (completed) "Completado" else "Pendiente",
-                    tint = if (completed) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable {
-                            completed = !completed
-                            onUpdate(setIndex, null, null, null, completed)
-                        }
+                CompleteSetButton(
+                    completed = completed,
+                    onClick = {
+                        completed = !completed
+                        onUpdate(setIndex, null, null, null, completed)
+                    }
                 )
             }
         }
 
-        // RF05 — Modo Gimnasio: el selector de esfuerzo se despliega solo cuando la
+        // Modo Gimnasio: el selector de esfuerzo se despliega solo cuando la
         // serie está completada, en una sola fila desplazable para no saturar la tarjeta.
         if (gymMode && completed) {
             RpeSelector(
@@ -326,13 +353,68 @@ fun SetRow(
     }
 }
 
-/** RF05 — Escala de esfuerzo percibido basada en RIR: de @6.0 a @10.0 en pasos de 0.5. */
+/** Botón "Done" de la serie: check en caja redondeada, con glow cuando está completo. */
+@Composable
+private fun CompleteSetButton(completed: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .then(
+                if (completed) Modifier.routineGlow(shape, RoutineSkin.Tertiary, 8.dp)
+                else Modifier
+            )
+            .clip(shape)
+            .background(
+                if (completed) RoutineSkin.Tertiary.copy(alpha = 0.2f)
+                else RoutineSkin.SurfaceContainer
+            )
+            .border(
+                BorderStroke(1.dp, if (completed) RoutineSkin.Tertiary else RoutineSkin.OutlineVariant),
+                shape
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Check,
+            contentDescription = if (completed) "Completado" else "Pendiente",
+            tint = if (completed) RoutineSkin.Tertiary else RoutineSkin.OnSurfaceVariant,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+/** Pie "Add Set": botón ancho para añadir una serie. */
+@Composable
+private fun AddSetFooter(onAddSet: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(RoutineSkin.SteelSurface)
+            .clickable { onAddSet() }
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Add,
+            contentDescription = null,
+            tint = RoutineSkin.PrimaryText,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.size(6.dp))
+        MonoLabel("Agregar Serie", color = RoutineSkin.PrimaryText, fontSize = 11)
+    }
+}
+
+/** Escala de esfuerzo percibido basada en RIR: de @6.0 a @10.0 en pasos de 0.5. */
 val rpeScale: List<Double> = (12..20).map { it / 2.0 }
 
-private fun rpeLabel(rpe: Double): String = if (rpe > 0) "@${rpe}" else "—"
+private fun rpeLabel(rpe: Double): String = if (rpe > 0) "@${formatKg(rpe)}" else "—"
 
 /**
- * RF05 — Selector horizontal de RPE. Un toque fija el valor; tocar el valor ya elegido
+ * Selector horizontal de RPE. Un toque fija el valor; tocar el valor ya elegido
  * lo limpia, ya que el registro del esfuerzo es opcional.
  */
 @Composable
@@ -348,36 +430,28 @@ fun RpeSelector(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "RPE",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium,
-            fontFamily = FontFamily.Monospace
-        )
+        MonoLabel("RPE", fontSize = 10)
 
         rpeScale.forEach { option ->
             val seleccionado = abs(currentRpe - option) < 0.001
             val shape = RoundedCornerShape(50)
             Text(
                 text = "@${option}",
-                color = if (seleccionado) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (seleccionado) RoutineSkin.OnPrimary else RoutineSkin.OnSurfaceVariant,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier
                     .clip(shape)
                     .background(
-                        color = if (seleccionado) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.surfaceVariant
+                        if (seleccionado) RoutineSkin.Primary else RoutineSkin.InputBackground
                     )
                     .border(
-                        border = BorderStroke(
+                        BorderStroke(
                             1.dp,
-                            if (seleccionado) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant
+                            if (seleccionado) RoutineSkin.Primary else RoutineSkin.OutlineVariant
                         ),
-                        shape = shape
+                        shape
                     )
                     .clickable { onSelect(if (seleccionado) null else option) }
                     .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -394,41 +468,15 @@ private fun formatKg(value: Double): String {
     }
 }
 
-@Composable
-fun RowScope.InlineNumberField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    hint: String,
-    color: Color,
-    weight: Float,
-    keyboardType: KeyboardType = KeyboardType.Decimal
-) {
-    BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
-        singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(
-            color = color,
-            fontSize = 14.sp,
-            fontFamily = FontFamily.Monospace,
-            textAlign = TextAlign.Center
-        ),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        modifier = Modifier.weight(weight),
-        decorationBox = { innerTextField ->
-            Box(contentAlignment = Alignment.Center) {
-                if (value.isEmpty()) {
-                    Text(
-                        text = hint,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-                innerTextField()
-            }
-        }
-    )
+/** Color de acento del básico (SBD) según el nombre del ejercicio; null si no aplica. */
+private fun sbdAccent(exerciseName: String): Color? {
+    val name = exerciseName.lowercase(Locale.ROOT)
+    return when {
+        name.contains("sentadilla") || name.contains("squat") -> ColorSquat
+        name.contains("banca") || name.contains("bench") -> ColorBench
+        name.contains("muerto") || name.contains("deadlift") -> ColorDeadlift
+        else -> null
+    }
 }
 
 @Composable
@@ -443,12 +491,9 @@ fun ExercisePickerDialog(
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (customExercises.isNotEmpty()) {
-                    Text(
-                        text = "PERSONALIZADOS (RF20)",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = FontFamily.Monospace,
+                    MonoLabel(
+                        "Personalizados",
+                        color = RoutineSkin.PrimaryText,
                         modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
                     )
                     customExercises.forEach { exercise ->
@@ -464,23 +509,17 @@ fun ExercisePickerDialog(
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     text = "${exercise.name} (Objetivo: ${exercise.primaryMuscle})",
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    color = RoutineSkin.OnSurface,
                                     fontSize = 14.sp
                                 )
                                 Text(
                                     text = "Medición: ${CustomExercise.labelOf(exercise.measurementType)}",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = RoutineSkin.OnSurfaceVariant,
                                     fontSize = 11.sp,
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
-                            Text(
-                                text = "PROPIO",
-                                color = MaterialTheme.colorScheme.tertiary,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
-                                fontFamily = FontFamily.Monospace
-                            )
+                            MonoLabel("Propio", color = RoutineSkin.Tertiary, fontSize = 10)
                         }
                     }
                     Box(
@@ -488,27 +527,20 @@ fun ExercisePickerDialog(
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
                             .height(1.dp)
-                            .background(MaterialTheme.colorScheme.outlineVariant)
+                            .background(RoutineSkin.OutlineVariant)
                     )
                 }
 
-                Text(
-                    text = "CATÁLOGO GLOBAL",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
+                MonoLabel("Catálogo Global", color = RoutineSkin.PrimaryText)
                 catalogExercises.forEach { (name, target) ->
                     Text(
                         text = "$name ($target)",
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = RoutineSkin.OnSurface,
                         fontSize = 14.sp,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onSelect(name, target) }
-                            .padding(vertical = 10.dp)
+                            .padding(vertical = 10.dp, horizontal = 0.dp)
                     )
                 }
             }

@@ -54,9 +54,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * RF20 — Creación de Ejercicios Personalizados.
+ * Creación de Ejercicios Personalizados.
  * Permite al atleta dar de alta ejercicios propios no presentes en el catálogo global
- * y reutilizarlos al armar plantillas de rutina (RF03).
+ * y reutilizarlos al armar plantillas de rutina.
  *
  * Se expone como panel reutilizable (formulario + listado) para poder montarlo dentro
  * de otras pantallas —pestaña "Personalizados" del módulo Catálogos— sin duplicar lógica.

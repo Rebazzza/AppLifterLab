@@ -28,9 +28,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.Hardware
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
@@ -40,10 +41,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -51,15 +50,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.ui.theme.NavBarSurface
-import com.example.lifterlab.ui.theme.NavBarSurfaceTop
+import com.example.lifterlab.ui.theme.NavIconActive
+import com.example.lifterlab.ui.theme.NavIconInactive
+import com.example.lifterlab.ui.theme.OutlineVariant
+import com.example.lifterlab.ui.theme.PrimaryAccent
 
 val CardCornerRadius = 12.dp
 val FieldCornerRadius = 12.dp
 
-/** Pestañas de la barra de navegación global (solo Home, Routines, Profile). */
+/** Pestañas de la barra de navegación global. */
 enum class LifterTab {
     Inicio,
     Rutinas,
+    Herramientas,
     Perfil
 }
 
@@ -264,7 +267,8 @@ fun RowScope.ChippedTag(
 
 /**
  * Tarjeta de estadística de un ejercicio básico (Sentadilla / Press Banca / Peso Muerto):
- * peso actual en monoespaciada, barra de progreso y texto de meta.
+ * peso actual en monoespaciada, barra de progreso y texto de meta. El color de acento
+ * sigue la codificación SBD de ui-design-system.md §3.
  */
 @Composable
 fun SbdStatCard(
@@ -274,7 +278,8 @@ fun SbdStatCard(
     weightText: String,
     goalText: String,
     fraction: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    accentColor: Color = MaterialTheme.colorScheme.primaryContainer
 ) {
     LifterCard(modifier) {
         Row(
@@ -283,9 +288,9 @@ fun SbdStatCard(
         ) {
             CardTitle(title, Modifier.weight(1f))
             val badgeColor =
-                if (badgeNeutral) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiary
+                if (badgeNeutral) MaterialTheme.colorScheme.surfaceVariant else accentColor
             val badgeTextColor =
-                if (badgeNeutral) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF003824)
+                if (badgeNeutral) MaterialTheme.colorScheme.onSurfaceVariant else NavIconActive
             Text(
                 text = badgeText,
                 modifier = Modifier
@@ -321,7 +326,7 @@ fun SbdStatCard(
         }
 
         androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
-        LifterProgressBar(fraction)
+        LifterProgressBar(fraction, color = accentColor)
 
         Text(
             text = goalText,
@@ -336,9 +341,13 @@ fun SbdStatCard(
     }
 }
 
-/** Barra de progreso_segmentada 0f..1f, reutilizada por las tarjetas de estadísticas. */
+/** Barra de progreso segmentada 0f..1f, reutilizada por las tarjetas de estadísticas. */
 @Composable
-fun LifterProgressBar(fraction: Float, modifier: Modifier = Modifier) {
+fun LifterProgressBar(
+    fraction: Float,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primaryContainer
+) {
     val clamped = fraction.coerceIn(0f, 1f)
     val fillWeight = clamped.coerceAtLeast(0.001f)
     val emptyWeight = (1f - clamped).coerceAtLeast(0.001f)
@@ -356,7 +365,7 @@ fun LifterProgressBar(fraction: Float, modifier: Modifier = Modifier) {
                 .weight(fillWeight)
                 .fillMaxSize()
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = color,
                     shape = RoundedCornerShape(4.dp)
                 )
         )
@@ -369,18 +378,22 @@ fun LifterProgressBar(fraction: Float, modifier: Modifier = Modifier) {
 }
 
 /**
- * Barra de navegación flotante global: permanece visible en todos los módulos
- * (Inicio, Rutinas, Perfil y submódulos). Se monta una sola vez desde MainActivity.
+ * Barra de navegación flotante global: cápsula oscura (#1C1B1D) sobre el fondo
+ * casi negro de la app (#09090B). Usa íconos line-art (Outlined) y marca la pestaña
+ * activa con un contenedor cápsula relleno de Azul Claro / Violeta (#6366F1) y el
+ * ícono en color oscuro; las pestañas inactivas quedan en gris tenue, sin contenedor.
+ * Se monta una sola vez desde MainActivity.
  */
 @Composable
 fun LifterBottomNavBar(
     currentTab: LifterTab?,
     onNavigateToDashboard: () -> Unit,
     onNavigateToRoutines: () -> Unit,
+    onNavigateToTools: () -> Unit,
     onNavigateToProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val forma = RoundedCornerShape(22.dp)
+    val forma = RoundedCornerShape(50)
     Row(
         modifier = modifier
             .navigationBarsPadding()
@@ -388,35 +401,21 @@ fun LifterBottomNavBar(
             .padding(bottom = 12.dp)
             .fillMaxWidth()
             .shadow(
-                elevation = 14.dp,
+                elevation = 20.dp,
                 shape = forma,
                 clip = false,
-                ambientColor = NavBarSurface,
-                spotColor = NavBarSurface
+                ambientColor = Color.Black,
+                spotColor = Color.Black
             )
-            .background(
-                brush = Brush.verticalGradient(
-                    listOf(NavBarSurfaceTop, NavBarSurface)
-                ),
-                shape = forma
-            )
-            .drawWithContent {
-                drawContent()
-                val grosor = 1.dp.toPx()
-                val sangria = 26.dp.toPx()
-                drawLine(
-                    color = Color.White.copy(alpha = 0.14f),
-                    start = Offset(sangria, grosor / 2f),
-                    end = Offset(size.width - sangria, grosor / 2f),
-                    strokeWidth = grosor
-                )
-            }
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.Center
+            .background(color = NavBarSurface, shape = forma)
+            .border(BorderStroke(1.dp, OutlineVariant), forma)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        NavItem("Inicio", Icons.Filled.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard)
-        NavItem("Rutinas", Icons.Filled.FitnessCenter, currentTab == LifterTab.Rutinas, onNavigateToRoutines)
-        NavItem("Perfil", Icons.Filled.Person, currentTab == LifterTab.Perfil, onNavigateToProfile)
+        NavItem("Inicio", Icons.Outlined.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard)
+        NavItem("Rutinas", Icons.Outlined.FitnessCenter, currentTab == LifterTab.Rutinas, onNavigateToRoutines)
+        NavItem("Herram.", Icons.Outlined.Hardware, currentTab == LifterTab.Herramientas, onNavigateToTools)
+        NavItem("Perfil", Icons.Outlined.Person, currentTab == LifterTab.Perfil, onNavigateToProfile)
     }
 }
 
@@ -427,28 +426,37 @@ private fun RowScope.NavItem(
     isActive: Boolean,
     onClick: () -> Unit
 ) {
-    val tintActivo = MaterialTheme.colorScheme.primaryContainer
-    val tintInactivo = MaterialTheme.colorScheme.onSurfaceVariant
+    val pillShape = RoundedCornerShape(50)
     Column(
         modifier = Modifier
             .weight(1f)
+            .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
             .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = if (isActive) tintActivo else tintInactivo,
-            modifier = Modifier.size(20.dp)
-        )
+        Box(
+            modifier = Modifier
+                .clip(pillShape)
+                .background(if (isActive) PrimaryAccent else Color.Transparent)
+                .padding(horizontal = 18.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (isActive) NavIconActive else NavIconInactive,
+                modifier = Modifier.size(22.dp)
+            )
+        }
         Text(
             text = label,
-            color = if (isActive) tintActivo else tintInactivo,
+            color = if (isActive) PrimaryAccent else NavIconInactive,
             fontSize = 10.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
             fontFamily = FontFamily.Monospace,
-            modifier = Modifier.padding(top = 2.dp)
+            maxLines = 1,
+            modifier = Modifier.padding(top = 3.dp)
         )
     }
 }

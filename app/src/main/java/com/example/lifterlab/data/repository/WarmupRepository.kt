@@ -24,7 +24,7 @@ class WarmupRepository(
     /**
      * Historial de sesiones del usuario en /users/{userId}/workout_sessions, de la más
      * reciente a la más antigua. Alimenta el historial (RF) y la referencia de pesos de
-     * la sesión anterior en el Modo Gimnasio (RF04).
+     * la sesión anterior en el Modo Gimnasio.
      */
     suspend fun getWorkoutSessions(userId: String, limit: Int = 5): Result<List<WorkoutSession>> {
         return try {

@@ -1,6 +1,7 @@
 package com.example.lifterlab.ui.features.catalog
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,8 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -38,18 +37,18 @@ import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.features.customexercises.CustomExercisesPanel
 import com.example.lifterlab.ui.features.routines.catalogExercises
-import com.example.lifterlab.ui.theme.NavBarSurface
-import com.example.lifterlab.ui.theme.NavBarSurfaceTop
 
-private enum class CatalogTab {
+enum class CatalogTab {
     Global,
     Personalizados
 }
 
 /**
- * Módulo Catálogos: explorer el catálogo global de ejercicios y los ejercicios
- * personalizados del atleta (RF20). El panel de pestañas permanece visible mientras se
+ * Módulo Catálogos: explora el catálogo global de ejercicios y los ejercicios
+ * personalizados del atleta. El panel de pestañas permanece visible mientras se
  * cambia de un catálogo a otro.
+ * Las herramientas secundarias viven en el módulo Herramientas de la barra
+ * flotante, no aquí.
  */
 @Composable
 fun CatalogScreen(onBack: () -> Unit) {
@@ -101,18 +100,16 @@ private fun CatalogTabPanel(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 10.dp,
-                shape = RoundedCornerShape(12.dp),
-                clip = false,
-                ambientColor = NavBarSurface,
-                spotColor = NavBarSurface
-            )
             .background(
-                brush = Brush.verticalGradient(
-                    listOf(NavBarSurfaceTop, NavBarSurface)
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .border(
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(14.dp)
             )
             .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp)

@@ -20,6 +20,7 @@ import com.example.lifterlab.ui.features.dashboard.DashboardScreen
 import com.example.lifterlab.ui.features.profile.ProfileEditScreen
 import com.example.lifterlab.ui.features.profile.ProfileViewScreen
 import com.example.lifterlab.ui.features.routines.RoutinesScreen
+import com.example.lifterlab.ui.features.tools.ToolsScreen
 import com.example.lifterlab.ui.theme.LifterLabTheme
 
 class MainActivity : ComponentActivity() {
@@ -38,6 +39,7 @@ private sealed class AppScreen {
     object Register : AppScreen()
     object Dashboard : AppScreen()
     object Routines : AppScreen()
+    object Tools : AppScreen()
     object Profile : AppScreen()
     object ProfileEdit : AppScreen()
 }
@@ -86,6 +88,7 @@ private fun AppNavigator() {
     val tabActual: LifterTab? = when (screen) {
         AppScreen.Dashboard -> LifterTab.Inicio
         AppScreen.Routines -> LifterTab.Rutinas
+        AppScreen.Tools -> LifterTab.Herramientas
         AppScreen.Profile, AppScreen.ProfileEdit -> LifterTab.Perfil
         else -> null
     }
@@ -111,6 +114,9 @@ private fun AppNavigator() {
                 AppScreen.Routines -> RoutinesScreen(
                     onBack = { irAModulo(AppScreen.Dashboard) }
                 )
+                AppScreen.Tools -> ToolsScreen(
+                    onBack = { irAModulo(AppScreen.Dashboard) }
+                )
                 AppScreen.Profile -> ProfileViewScreen(
                     onNavigateToEdit = { navegarA(AppScreen.ProfileEdit) },
                     onSignOut = { cerrarSesion() }
@@ -126,6 +132,7 @@ private fun AppNavigator() {
                 currentTab = tabActual,
                 onNavigateToDashboard = { irAModulo(AppScreen.Dashboard) },
                 onNavigateToRoutines = { irAModulo(AppScreen.Routines) },
+                onNavigateToTools = { irAModulo(AppScreen.Tools) },
                 onNavigateToProfile = { irAModulo(AppScreen.Profile) },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )

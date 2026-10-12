@@ -1,32 +1,32 @@
 package com.example.lifterlab.ui.features.routines
 
-import androidx.compose.foundation.BorderStroke
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,8 +39,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,13 +51,6 @@ import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.toast
 import com.example.lifterlab.ui.features.catalog.CatalogScreen
-import com.example.lifterlab.ui.components.CardCaption
-import com.example.lifterlab.ui.components.ErrorText
-import com.example.lifterlab.ui.components.LifterCard
-import com.example.lifterlab.ui.components.PrimaryButton
-import com.example.lifterlab.ui.components.ScreenSubtitle
-import com.example.lifterlab.ui.components.ScreenTitle
-import com.example.lifterlab.ui.components.SecondaryButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -142,68 +135,86 @@ private fun RoutinesListScreen(
             .onFailure { e -> mensajeError = e.message ?: "No se pudieron cargar las rutinas." }
     }
 
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
-        ) {
+    Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
-            ScreenTitle("Rutinas", Modifier.padding(top = 8.dp))
-            ScreenSubtitle(
-                "Crea, edita e inicia tus entrenamientos.",
-                Modifier.padding(top = 8.dp, bottom = 16.dp)
-            )
+            RoutineTopBar(onBack = onBack)
 
-            PrimaryButton(
-                text = "Crear Nueva Rutina",
-                onClick = onCreate
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 18.dp)
+                    .padding(bottom = 104.dp)
+            ) {
+                Text(
+                    text = "Rutinas",
+                    color = RoutineSkin.OnSurface,
+                    fontSize = 27.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 32.sp
+                )
+                Text(
+                    text = "Crea, edita e inicia tus entrenamientos.",
+                    color = RoutineSkin.OnSurfaceVariant,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
 
-            ExpressCard(onClick = onExpress)
+                Spacer(Modifier.height(18.dp))
+                AccentWideButton(
+                    text = "Crear Nueva Rutina",
+                    onClick = onCreate,
+                    trailingIcon = Icons.Filled.Add
+                )
 
-            Spacer(Modifier.height(8.dp))
-            SecondaryButton(
-                text = "Catálogos",
-                onClick = onNavigateToCatalog,
-                minHeight = 46.dp
-            )
+                ExpressCard(onClick = onExpress)
 
-            Spacer(Modifier.height(20.dp))
-            Text(
-                text = "Mis Rutinas",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            if (savedTemplates.isEmpty()) {
-                LifterCard(Modifier.padding(top = 12.dp)) {
-                    CardCaption("SIN RUTINAS CREADAS")
-                    Text(
-                        text = "Presiona \"Crear Nueva Rutina\" para empezar.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(top = 6.dp)
-                    )
-                }
-            } else {
-                savedTemplates.forEach { routine ->
-                    RoutineRow(
-                        routine = routine,
-                        onEdit = { onEdit(routine) },
-                        onStart = { onStart(routine) },
-                        onDelete = { routineToDelete = routine }
-                    )
-                }
-            }
-
-            if (mensajeError.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
-                ErrorText(mensajeError, Modifier.fillMaxWidth())
+                SteelOutlineButton(
+                    text = "Catálogos",
+                    contentColor = RoutineSkin.OnSurfaceVariant,
+                    onClick = onNavigateToCatalog,
+                    leadingIcon = Icons.Filled.ChevronRight
+                )
+
+                MonoLabel(
+                    "Mis Rutinas",
+                    color = RoutineSkin.OnSurface,
+                    fontSize = 13,
+                    modifier = Modifier.padding(top = 24.dp)
+                )
+
+                if (savedTemplates.isEmpty()) {
+                    SteelCard(Modifier.padding(top = 12.dp)) {
+                        MonoLabel("Sin rutinas creadas", color = RoutineSkin.PrimaryText)
+                        Text(
+                            text = "Presiona \"Crear Nueva Rutina\" para empezar.",
+                            color = RoutineSkin.OnSurfaceVariant,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                    }
+                } else {
+                    savedTemplates.forEach { routine ->
+                        RoutineRow(
+                            routine = routine,
+                            onEdit = { onEdit(routine) },
+                            onStart = { onStart(routine) },
+                            onDelete = { routineToDelete = routine }
+                        )
+                    }
+                }
+
+                if (mensajeError.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = mensajeError,
+                        color = RoutineSkin.Error,
+                        fontSize = 14.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
@@ -239,41 +250,53 @@ private fun RoutinesListScreen(
 
 @Composable
 private fun ExpressCard(onClick: () -> Unit) {
+    val shape = RoundedCornerShape(12.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 12.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                RoundedCornerShape(12.dp)
-            )
+            .clip(shape)
+            .background(RoutineSkin.SteelSurface)
+            .border(BorderStroke(1.dp, RoutineSkin.PrimaryText), shape)
             .clickable { onClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Filled.Bolt,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
-        Column(Modifier.padding(start = 12.dp)) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(RoutineSkin.PrimaryText.copy(alpha = 0.12f))
+                .border(BorderStroke(1.dp, RoutineSkin.PrimaryText), RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Bolt,
+                contentDescription = null,
+                tint = RoutineSkin.PrimaryText,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Column(Modifier.weight(1f).padding(start = 12.dp)) {
             Text(
                 text = "Rutina Express",
-                color = MaterialTheme.colorScheme.primary,
+                color = RoutineSkin.PrimaryText,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Bold
             )
             Text(
                 text = "Entrena libre: los datos se guardan, la rutina no.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp
+                color = RoutineSkin.OnSurfaceVariant,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
+        Icon(
+            imageVector = Icons.Filled.ChevronRight,
+            contentDescription = null,
+            tint = RoutineSkin.PrimaryText,
+            modifier = Modifier.size(22.dp)
+        )
     }
 }
 
@@ -284,97 +307,68 @@ private fun RoutineRow(
     onStart: () -> Unit,
     onDelete: () -> Unit
 ) {
-    LifterCard(Modifier.padding(top = 12.dp)) {
-        Column {
-            Text(
-                text = routine.name,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = "${routine.exercises.size} Ejercicios • ${routine.estimatedTimeMins} mins",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
+    SteelCard(Modifier.padding(top = 12.dp)) {
+        Text(
+            text = routine.name,
+            color = RoutineSkin.OnSurface,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold
+        )
+        MonoLabel(
+            "${routine.exercises.size} Ejercicios • ${routine.estimatedTimeMins} mins",
+            color = RoutineSkin.OnSurfaceVariant,
+            fontSize = 11,
+            modifier = Modifier.padding(top = 4.dp)
+        )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
+                .padding(top = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StartButton("Iniciar", onClick = onStart, modifier = Modifier.weight(1f))
+            StartButton(text = "Iniciar", onClick = onStart, modifier = Modifier.weight(1f))
             Spacer(Modifier.size(8.dp))
-            ActionButton(Icons.Filled.Edit, "Editar", onClick = onEdit, modifier = Modifier.weight(1f))
+            RoundIconButton(
+                icon = Icons.Filled.Edit,
+                contentDescription = "Editar ${routine.name}",
+                onClick = onEdit
+            )
             Spacer(Modifier.size(8.dp))
-            ActionButton(Icons.Filled.Delete, "Borrar", onClick = onDelete, modifier = Modifier.weight(1f), danger = true)
+            RoundIconButton(
+                icon = Icons.Filled.Delete,
+                contentDescription = "Borrar ${routine.name}",
+                onClick = onDelete,
+                tint = RoutineSkin.Error
+            )
         }
     }
 }
 
 @Composable
-private fun RowScope.StartButton(text: String, onClick: () -> Unit, modifier: Modifier) {
+private fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier) {
+    val shape = RoundedCornerShape(10.dp)
     Row(
         modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(12.dp)
-            )
+            .clip(shape)
+            .background(RoutineSkin.InversePrimary)
             .clickable { onClick() }
             .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Filled.PlayArrow,
             contentDescription = null,
-            tint = Color.White,
+            tint = RoutineSkin.OnPrimary,
             modifier = Modifier.size(18.dp)
         )
         Spacer(Modifier.size(6.dp))
         Text(
             text = text,
-            color = Color.White,
+            color = RoutineSkin.OnPrimary,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun RowScope.ActionButton(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier,
-    danger: Boolean = false
-) {
-    val contentColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-    Row(
-        modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable { onClick() }
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(Modifier.size(4.dp))
-        Text(
-            text = text,
-            color = contentColor,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Bold
         )
     }
 }

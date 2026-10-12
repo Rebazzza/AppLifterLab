@@ -4,6 +4,7 @@ import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.model.RoutineExercise
 import com.example.lifterlab.data.model.WorkoutSession
+import com.example.lifterlab.data.model.WarmupStep
 import java.util.Locale
 
 val catalogExercises = listOf(
@@ -45,7 +46,7 @@ fun removeExercise(routine: Routine, exIndex: Int): Routine {
 }
 
 /**
- * RF23 — Reordenamiento de ejercicios (drag-and-drop o flechas Subir/Bajar).
+ * Reordenamiento de ejercicios (drag-and-drop o flechas Subir/Bajar).
  * Mueve el ejercicio de [fromIndex] a [toIndex] dentro de la rutina o sesión activa y
  * recalcula la numeración de ejecución secuencial (1..n) de todos los ejercicios.
  */
@@ -58,12 +59,42 @@ fun moveExercise(routine: Routine, fromIndex: Int, toIndex: Int): Routine {
     return routine.copy(exercises = exercises.renumberExecutionOrder())
 }
 
-/** RF23 — Recalcula executionOrder (1, 2, 3…) según la posición actual de cada ejercicio. */
+/** Recalcula executionOrder (1, 2, 3…) según la posición actual de cada ejercicio. */
 private fun List<RoutineExercise>.renumberExecutionOrder(): List<RoutineExercise> =
     mapIndexed { index, exercise ->
         if (exercise.executionOrder == index + 1) exercise
         else exercise.copy(executionOrder = index + 1)
     }
+
+/**
+ * Transfiere las series de aproximación calculadas al ejercicio indicado,
+ * insertándolas ANTES de las series existentes para respetar el orden de ejecución
+ * (calentamiento → trabajo). Las series quedan pendientes de marcar como completadas.
+ */
+fun applyWarmupPlan(routine: Routine, exIndex: Int, steps: List<WarmupStep>): Routine {
+    if (steps.isEmpty()) return routine
+    if (exIndex !in routine.exercises.indices) return routine
+
+    val exercises = routine.exercises.toMutableList()
+    val targetEx = exercises[exIndex]
+
+    val warmupSets = steps.map { step ->
+        ExerciseSet(
+            setNumber = 0,
+            weightKg = step.weightKg,
+            reps = step.reps,
+            rpe = step.suggestedRpe ?: 0.0,
+            isCompleted = false
+        )
+    }
+
+    val sets = (warmupSets + targetEx.sets).mapIndexed { index, set ->
+        if (set.setNumber == index + 1) set else set.copy(setNumber = index + 1)
+    }
+
+    exercises[exIndex] = targetEx.copy(sets = sets)
+    return routine.copy(exercises = exercises)
+}
 
 fun updateSetData(
     routine: Routine,
@@ -124,7 +155,7 @@ fun calculateVolume(routine: Routine): String {
 }
 
 /**
- * RF04 — Volumen en vivo: solo cuenta el tonelaje de las series ya verificadas
+ * Volumen en vivo: solo cuenta el tonelaje de las series ya verificadas
  * (peso x repeticiones), que es el que se consolida al cerrar el entrenamiento.
  */
 fun calculateCompletedVolume(routine: Routine): String {
@@ -146,7 +177,7 @@ private fun formatVolume(totalVolume: Double): String {
 }
 
 /**
- * RF04 — Referencia de la última sesión: mapea nombre de ejercicio -> series
+ * Referencia de la última sesión: mapea nombre de ejercicio -> series
  * registradas, para mostrarlas como referencia en las tarjetas del Modo Gimnasio.
  */
 fun previousSessionReference(sessions: List<WorkoutSession>): Map<String, List<ExerciseSet>> {

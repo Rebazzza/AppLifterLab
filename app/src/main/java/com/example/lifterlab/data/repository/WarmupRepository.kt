@@ -38,8 +38,42 @@ class WarmupRepository(
                 .await()
 
             Result.success(snapshot.documents.mapNotNull { doc ->
-                doc.toObject(WorkoutSession::class.java)
+                doc.toObject(WorkoutSession::class.java)?.copy(id = doc.id)
             })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * RF17 — Sobrescribe una sesión finalizada en /users/{userId}/workout_sessions/{sessionId}
+     * con los pesos, repeticiones, RPE y ejercicios corregidos.
+     */
+    suspend fun updateWorkoutSession(userId: String, session: WorkoutSession): Result<Unit> {
+        return try {
+            require(session.id.isNotBlank()) { "La sesión no tiene identificador." }
+            firestore.collection("users")
+                .document(userId)
+                .collection("workout_sessions")
+                .document(session.id)
+                .set(session)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** RF17 — Elimina una sesión del historial. */
+    suspend fun deleteWorkoutSession(userId: String, sessionId: String): Result<Unit> {
+        return try {
+            firestore.collection("users")
+                .document(userId)
+                .collection("workout_sessions")
+                .document(sessionId)
+                .delete()
+                .await()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

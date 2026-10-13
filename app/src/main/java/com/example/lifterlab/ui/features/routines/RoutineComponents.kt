@@ -19,17 +19,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -479,74 +489,282 @@ private fun sbdAccent(exerciseName: String): Color? {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExercisePickerDialog(
     customExercises: List<CustomExercise> = emptyList(),
+    currentExerciseName: String? = null,
     onSelect: (name: String, targetMuscles: String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    var searchQuery by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text("Seleccionar Ejercicio") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                if (customExercises.isNotEmpty()) {
-                    MonoLabel(
-                        "Personalizados",
-                        color = RoutineSkin.PrimaryText,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
+        sheetState = sheetState,
+        containerColor = Color(0xFF1C1B1D),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 40.dp, height = 4.dp)
+                    .background(Color(0xFF2A2A2C), CircleShape)
+            )
+        },
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            // Cabecera
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Cambiar ejercicio",
+                        color = Color(0xFFE6E1E6),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    customExercises.forEach { exercise ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSelect(exercise.name, "Objetivo: ${exercise.primaryMuscle}")
-                                }
-                                .padding(vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    text = "${exercise.name} (Objetivo: ${exercise.primaryMuscle})",
-                                    color = RoutineSkin.OnSurface,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    text = "Medición: ${CustomExercise.labelOf(exercise.measurementType)}",
-                                    color = RoutineSkin.OnSurfaceVariant,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace
-                                )
-                            }
-                            MonoLabel("Propio", color = RoutineSkin.Tertiary, fontSize = 10)
-                        }
-                    }
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .height(1.dp)
-                            .background(RoutineSkin.OutlineVariant)
+                    Text(
+                        text = "Selecciona el nuevo movimiento para la serie",
+                        color = Color(0xFFC9C4CA),
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
-
-                MonoLabel("Catálogo Global", color = RoutineSkin.PrimaryText)
-                catalogExercises.forEach { (name, target) ->
-                    Text(
-                        text = "$name ($target)",
-                        color = RoutineSkin.OnSurface,
-                        fontSize = 14.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(name, target) }
-                            .padding(vertical = 10.dp, horizontal = 0.dp)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF201F22))
+                        .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                        .clickable { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cerrar",
+                        tint = Color(0xFFC9C4CA),
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+
+            // Buscador
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF201F22))
+                        .border(2.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = Color(0xFFC9C4CA),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            color = Color(0xFFE6E1E6),
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.SansSerif
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp),
+                        decorationBox = { innerTextField ->
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    text = "Buscar ejercicio...",
+                                    color = Color(0xFF52525B),
+                                    fontSize = 13.sp
+                                )
+                            }
+                            innerTextField()
+                        }
+                    )
+                }
+            }
+
+            // Lista de ejercicios
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 340.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val query = searchQuery.trim().lowercase(Locale.ROOT)
+
+                val filteredCustom = customExercises.filter {
+                    query.isEmpty() || it.name.lowercase(Locale.ROOT).contains(query) ||
+                        it.primaryMuscle.lowercase(Locale.ROOT).contains(query)
+                }
+
+                val filteredCatalog = catalogExercises.filter { (name, target) ->
+                    query.isEmpty() || name.lowercase(Locale.ROOT).contains(query) ||
+                        target.lowercase(Locale.ROOT).contains(query)
+                }
+
+                if (filteredCustom.isEmpty() && filteredCatalog.isEmpty()) {
+                    Text(
+                        text = "No se encontraron ejercicios con '$searchQuery'",
+                        color = Color(0xFFC9C4CA),
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                } else {
+                    filteredCustom.forEach { exercise ->
+                        val isCurrent = currentExerciseName != null &&
+                            exercise.name.equals(currentExerciseName, ignoreCase = true)
+                        ExerciseSheetRow(
+                            name = exercise.name,
+                            categoryTag = "Propio · ${exercise.primaryMuscle}",
+                            isCurrent = isCurrent,
+                            onClick = { onSelect(exercise.name, "Objetivo: ${exercise.primaryMuscle}") }
+                        )
+                    }
+
+                    filteredCatalog.forEach { (name, target) ->
+                        val isCurrent = currentExerciseName != null &&
+                            name.equals(currentExerciseName, ignoreCase = true)
+                        val categoryTag = getCategoryTag(name, target)
+                        ExerciseSheetRow(
+                            name = name,
+                            categoryTag = categoryTag,
+                            isCurrent = isCurrent,
+                            onClick = { onSelect(name, target) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Footer informativo
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF201F22))
+                    .border(1.dp, Color(0xFF2A2A2C))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = "Info",
+                    tint = Color(0xFFC1C1FB),
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "Las series se conservan; solo cambia el ejercicio. El peso, repeticiones y RPE actuales se mantendrán intactos.",
+                    color = Color(0xFFC9C4CA),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
         }
-    )
+    }
+}
+
+@Composable
+private fun ExerciseSheetRow(
+    name: String,
+    categoryTag: String,
+    isCurrent: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor = if (isCurrent) Color(0xFFC1C1FB) else Color(0xFF2A2A2C)
+    val bgColor = if (isCurrent) Color(0x1AC1C1FB) else Color(0xFF201F22)
+    val borderWidth = if (isCurrent) 2.dp else 1.dp
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(bgColor)
+            .border(borderWidth, borderColor, RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            if (isCurrent) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(Color(0xFFC1C1FB), CircleShape)
+                )
+            }
+            Text(
+                text = name,
+                color = if (isCurrent) Color(0xFFC1C1FB) else Color(0xFFE6E1E6),
+                fontSize = 14.sp,
+                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+            )
+        }
+        if (isCurrent) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFC1C1FB))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = "ACTUAL",
+                    color = Color(0xFF131315),
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            Text(
+                text = categoryTag,
+                color = Color(0xFFC9C4CA),
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+    }
+}
+
+private fun getCategoryTag(name: String, target: String): String {
+    val lower = name.lowercase(Locale.ROOT)
+    val targetLower = target.lowercase(Locale.ROOT)
+    return when {
+        lower.contains("sentadilla") || lower.contains("banca") || (lower.contains("peso muerto") && !lower.contains("rumano")) -> "IPF Comp"
+        lower.contains("prensa") || lower.contains("curl") || targetLower.contains("máquina") -> "Máquina"
+        lower.contains("dominadas") || lower.contains("fondos") || targetLower.contains("calistenia") -> "Calistenia"
+        else -> "Accesorio"
+    }
 }

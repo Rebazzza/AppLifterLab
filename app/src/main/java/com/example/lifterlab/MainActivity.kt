@@ -17,6 +17,9 @@ import com.example.lifterlab.ui.components.LifterTab
 import com.example.lifterlab.ui.features.auth.LoginScreen
 import com.example.lifterlab.ui.features.auth.RegisterScreen
 import com.example.lifterlab.ui.features.dashboard.DashboardScreen
+import com.example.lifterlab.ui.features.history.HistoryScreen
+import com.example.lifterlab.ui.features.tools.OneRepMaxScreen
+import com.example.lifterlab.ui.features.tools.PlateLoaderScreen
 import com.example.lifterlab.ui.features.profile.ProfileEditScreen
 import com.example.lifterlab.ui.features.profile.ProfileViewScreen
 import com.example.lifterlab.ui.features.routines.RoutinesScreen
@@ -42,6 +45,9 @@ private sealed class AppScreen {
     object Tools : AppScreen()
     object Profile : AppScreen()
     object ProfileEdit : AppScreen()
+    object History : AppScreen()
+    object OneRepMax : AppScreen()
+    object PlateLoader : AppScreen()
 }
 
 @Composable
@@ -86,7 +92,7 @@ private fun AppNavigator() {
     // La barra inferior es global: no se oculta al cambiar de modulo.
     val mostrarBarra = screen !is AppScreen.Login && screen !is AppScreen.Register
     val tabActual: LifterTab? = when (screen) {
-        AppScreen.Dashboard -> LifterTab.Inicio
+        AppScreen.Dashboard, AppScreen.History, AppScreen.OneRepMax, AppScreen.PlateLoader -> LifterTab.Inicio
         AppScreen.Routines -> LifterTab.Rutinas
         AppScreen.Tools -> LifterTab.Herramientas
         AppScreen.Profile, AppScreen.ProfileEdit -> LifterTab.Perfil
@@ -109,8 +115,14 @@ private fun AppNavigator() {
                 )
                 AppScreen.Dashboard -> DashboardScreen(
                     onNavigateToRoutines = { irAModulo(AppScreen.Routines) },
-                    onNavigateToProfile = { irAModulo(AppScreen.Profile) }
+                    onNavigateToProfile = { irAModulo(AppScreen.Profile) },
+                    onNavigateToHistory = { navegarA(AppScreen.History) },
+                    onNavigateToOneRepMax = { navegarA(AppScreen.OneRepMax) },
+                    onNavigateToPlateLoader = { navegarA(AppScreen.PlateLoader) }
                 )
+                AppScreen.History -> HistoryScreen(onBack = { volverA(AppScreen.Dashboard) })
+                AppScreen.OneRepMax -> OneRepMaxScreen(onBack = { volverA(AppScreen.Dashboard) })
+                AppScreen.PlateLoader -> PlateLoaderScreen(onBack = { volverA(AppScreen.Dashboard) })
                 AppScreen.Routines -> RoutinesScreen(
                     onBack = { irAModulo(AppScreen.Dashboard) }
                 )

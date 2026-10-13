@@ -69,6 +69,9 @@ import kotlinx.coroutines.withContext
 fun DashboardScreen(
     onNavigateToRoutines: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onNavigateToOneRepMax: () -> Unit,
+    onNavigateToPlateLoader: () -> Unit,
     authRepository: AuthRepository = remember { AuthRepository() },
     profileRepository: ProfileRepository = remember { ProfileRepository() },
     warmupRepository: WarmupRepository = remember { WarmupRepository() }
@@ -172,7 +175,12 @@ fun DashboardScreen(
             LastSessionCard(
                 session = lastSession,
                 isLoading = !sesionCargada,
-                onNavigateToRoutines = onNavigateToRoutines
+                onNavigateToHistory = onNavigateToHistory
+            )
+
+            ToolsCard(
+                onNavigateToOneRepMax = onNavigateToOneRepMax,
+                onNavigateToPlateLoader = onNavigateToPlateLoader
             )
 
             AlertBanner()
@@ -303,7 +311,7 @@ private fun StatBox(icon: ImageVector, label: String, value: String) {
 private fun LastSessionCard(
     session: WorkoutSession?,
     isLoading: Boolean,
-    onNavigateToRoutines: () -> Unit
+    onNavigateToHistory: () -> Unit
 ) {
     LifterCard(Modifier.padding(top = 16.dp)) {
         Row(
@@ -363,7 +371,31 @@ private fun LastSessionCard(
         Spacer(Modifier.height(14.dp))
         SecondaryButton(
             text = "VER REGISTRO \u2192",
-            onClick = { onNavigateToRoutines() },
+            onClick = { onNavigateToHistory() },
+            minHeight = 46.dp
+        )
+    }
+}
+
+@Composable
+private fun ToolsCard(onNavigateToOneRepMax: () -> Unit, onNavigateToPlateLoader: () -> Unit) {
+    LifterCard(Modifier.padding(top = 16.dp)) {
+        CardTitle("Herramientas")
+        Text(
+            text = "Calcula tu 1RM y arma la barra con discos IPF.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
+        )
+        SecondaryButton(
+            text = "CALCULADORA 1RM →",
+            onClick = onNavigateToOneRepMax,
+            minHeight = 46.dp
+        )
+        Spacer(Modifier.height(8.dp))
+        SecondaryButton(
+            text = "CARGA DE BARRA IPF →",
+            onClick = onNavigateToPlateLoader,
             minHeight = 46.dp
         )
     }

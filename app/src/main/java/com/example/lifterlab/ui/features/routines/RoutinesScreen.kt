@@ -78,7 +78,6 @@ fun RoutinesScreen(
 
     when (val current = route) {
         is RoutinesRoute.List -> RoutinesListScreen(
-            onBack = onBack,
             authRepository = authRepository,
             routineRepository = routineRepository,
             onCreate = { route = RoutinesRoute.Editor(Routine(name = "Mi Nueva Rutina")) },
@@ -112,7 +111,6 @@ fun RoutinesScreen(
 
 @Composable
 private fun RoutinesListScreen(
-    onBack: () -> Unit,
     authRepository: AuthRepository,
     routineRepository: RoutineRepository,
     onCreate: () -> Unit,
@@ -138,7 +136,9 @@ private fun RoutinesListScreen(
     Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            RoutineTopBar(onBack = onBack)
+            // Vista raíz del menú: el panel no muestra botón de volver (la barra
+            // flotante y el botón atrás nativo cubren la salida del módulo).
+            RoutineTopBar()
 
             Column(
                 modifier = Modifier

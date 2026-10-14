@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +34,7 @@ import com.example.lifterlab.ui.components.LifterTextField
 import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.ScreenSubtitle
+import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,71 +60,76 @@ fun RegisterScreen(
     val context = LocalContext.current
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            ScreenTitle("Crea tu cuenta", Modifier.padding(top = 32.dp))
-            ScreenSubtitle("Configura tu perfil de atleta desde el inicio", Modifier.padding(top = 4.dp, bottom = 20.dp))
+        Column(modifier = Modifier.fillMaxSize()) {
 
-            LifterCard {
-                FormField("Nombre", value = nombre, onValueChange = { nombre = it }, hint = "Tu nombre", keyboardType = KeyboardType.Text)
-                FormField("Correo electrónico", value = correo, onValueChange = { correo = it }, hint = "tucorreo@example.com", keyboardType = KeyboardType.Email)
-                FormField("Contraseña", value = password, onValueChange = { password = it }, hint = "Contraseña", isPassword = true)
-                FormField("Año de nacimiento", value = birthYear, onValueChange = { birthYear = it }, hint = "Ej. 1995", keyboardType = KeyboardType.Number)
-                FormField("Sexo", value = genero, onValueChange = { genero = it }, hint = "Masculino / Femenino / Otro")
-                FormField("Altura (cm)", value = altura, onValueChange = { altura = it }, hint = "Altura en cm (Ej. 175)", keyboardType = KeyboardType.Decimal)
-                FormField("Peso corporal (kg)", value = peso, onValueChange = { peso = it }, hint = "Peso actual en kg (Ej. 80)", keyboardType = KeyboardType.Decimal)
+            // Módulo secundario (se abrió desde Iniciar Sesión): sí muestra botón de volver.
+            RoutineTopBar(onBack = onNavigateToLogin)
 
-                if (mensajeError.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    ErrorText(mensajeError, Modifier.fillMaxWidth())
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
+                ScreenTitle("Crea tu cuenta", Modifier.padding(top = 8.dp))
+                ScreenSubtitle("Configura tu perfil de atleta desde el inicio", Modifier.padding(top = 4.dp, bottom = 20.dp))
+
+                LifterCard {
+                    FormField("Nombre", value = nombre, onValueChange = { nombre = it }, hint = "Tu nombre", keyboardType = KeyboardType.Text)
+                    FormField("Correo electrónico", value = correo, onValueChange = { correo = it }, hint = "tucorreo@example.com", keyboardType = KeyboardType.Email)
+                    FormField("Contraseña", value = password, onValueChange = { password = it }, hint = "Contraseña", isPassword = true)
+                    FormField("Año de nacimiento", value = birthYear, onValueChange = { birthYear = it }, hint = "Ej. 1995", keyboardType = KeyboardType.Number)
+                    FormField("Sexo", value = genero, onValueChange = { genero = it }, hint = "Masculino / Femenino / Otro")
+                    FormField("Altura (cm)", value = altura, onValueChange = { altura = it }, hint = "Altura en cm (Ej. 175)", keyboardType = KeyboardType.Decimal)
+                    FormField("Peso corporal (kg)", value = peso, onValueChange = { peso = it }, hint = "Peso actual en kg (Ej. 80)", keyboardType = KeyboardType.Decimal)
+
+                    if (mensajeError.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        ErrorText(mensajeError, Modifier.fillMaxWidth())
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    PrimaryButton(
+                        text = if (cargando) "Creando cuenta..." else "Crear Cuenta",
+                        onClick = {
+                            cargando = true
+                            mensajeError = ""
+                            postRegister(
+                                nombre = nombre,
+                                correo = correo,
+                                password = password,
+                                birthYear = birthYear,
+                                genero = genero,
+                                altura = altura,
+                                peso = peso,
+                                scope = scope,
+                                context = context,
+                                authRepository = authRepository,
+                                onError = { msg ->
+                                    cargando = false
+                                    mensajeError = msg
+                                },
+                                onSuccess = {
+                                    cargando = false
+                                    context.toast("¡Cuenta creada!")
+                                    onRegisterSuccess()
+                                }
+                            )
+                        },
+                        enabled = !cargando
+                    )
                 }
 
-                Spacer(Modifier.height(24.dp))
-                PrimaryButton(
-                    text = if (cargando) "Creando cuenta..." else "Crear Cuenta",
-                    onClick = {
-                        cargando = true
-                        mensajeError = ""
-                        postRegister(
-                            nombre = nombre,
-                            correo = correo,
-                            password = password,
-                            birthYear = birthYear,
-                            genero = genero,
-                            altura = altura,
-                            peso = peso,
-                            scope = scope,
-                            context = context,
-                            authRepository = authRepository,
-                            onError = { msg ->
-                                cargando = false
-                                mensajeError = msg
-                            },
-                            onSuccess = {
-                                cargando = false
-                                context.toast("¡Cuenta creada!")
-                                onRegisterSuccess()
-                            }
-                        )
-                    },
-                    enabled = !cargando
+                Text(
+                    text = "¿Ya tienes cuenta? Inicia sesión",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 15.sp,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .clickable { onNavigateToLogin() }
+                        .padding(top = 20.dp)
                 )
             }
-
-            Text(
-                text = "¿Ya tienes cuenta? Inicia sesión",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 15.sp,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .clickable { onNavigateToLogin() }
-                    .padding(top = 20.dp)
-            )
         }
     }
 }

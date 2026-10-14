@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,11 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.ProfileRepository
-import com.example.lifterlab.ui.components.CardCaption
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.features.customexercises.CustomExercisesPanel
+import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.ui.features.warmup.WarmupCalculatorPanel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -77,7 +76,6 @@ fun ToolsScreen(onBack: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         when (val current = route) {
             is ToolsRoute.Index -> ToolsIndexPanel(
-                onBack = onBack,
                 onOpen = { route = ToolsRoute.Detail(it) }
             )
             is ToolsRoute.Detail -> ToolDetailPanel(
@@ -90,62 +88,60 @@ fun ToolsScreen(onBack: () -> Unit) {
 
 @Composable
 private fun ToolsIndexPanel(
-    onBack: () -> Unit,
     onOpen: (ToolEntry) -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "← Volver",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 15.sp,
-            modifier = Modifier.clickable { onBack() }
-        )
-        ScreenTitle("Herramientas", Modifier.padding(top = 8.dp))
-        ScreenSubtitle(
-            "Herramientas secundarias para planificar y registrar tu entrenamiento.",
-            Modifier.padding(top = 4.dp, bottom = 16.dp)
-        )
+        // Vista raíz del menú: panel de marca sin botón de volver.
+        RoutineTopBar()
 
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 104.dp)
+                .weight(1f)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
+            ScreenTitle("Herramientas", Modifier.padding(top = 8.dp))
+            ScreenSubtitle(
+                "Herramientas secundarias para planificar y registrar tu entrenamiento.",
+                Modifier.padding(top = 4.dp, bottom = 16.dp)
+            )
 
-
-            ToolEntry.entries.forEach { tool ->
-                LifterCard(Modifier.padding(top = 12.dp)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpen(tool) },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                text = tool.title,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = tool.description,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(top = 2.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 104.dp)
+            ) {
+                ToolEntry.entries.forEach { tool ->
+                    LifterCard(Modifier.padding(top = 12.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onOpen(tool) },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = tool.title,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = tool.description,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Abrir ${tool.title}",
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Abrir ${tool.title}",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
             }
@@ -175,29 +171,19 @@ private fun ToolDetailPanel(tool: ToolEntry, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Text(
-                text = "← Volver a Herramientas",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.clickable { onBack() }
-            )
-            ScreenTitle(tool.title, Modifier.padding(top = 8.dp))
-        }
+        // Módulo secundario (se abrió desde el índice): sí muestra botón de volver.
+        RoutineTopBar(onBack = onBack)
 
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
                 .padding(bottom = 104.dp)
         ) {
+            ScreenTitle(tool.title, Modifier.padding(top = 8.dp))
+
             when (tool) {
                 ToolEntry.WarmupCalculator -> WarmupCalculatorPanel(baseBarWeightKg = baseBarWeightKg)
                 ToolEntry.CustomExercises -> CustomExercisesPanel()

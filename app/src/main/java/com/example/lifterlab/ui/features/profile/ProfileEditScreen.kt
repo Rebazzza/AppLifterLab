@@ -1,13 +1,11 @@
 package com.example.lifterlab.ui.features.profile
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +37,7 @@ import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,104 +83,102 @@ fun ProfileEditScreen(
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
-            Text(
-                text = "← Volver",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.clickable { onBack() }
-            )
-            ScreenTitle("Editar Perfil", Modifier.padding(top = 8.dp))
-            ScreenSubtitle(
-                text = "Actualiza tus datos personales y medidas corporales.",
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-            )
+            // Módulo secundario (se abrió desde Perfil): sí muestra botón de volver.
+            RoutineTopBar(onBack = onBack)
 
-            if (cargando) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(bottom = 104.dp)
+            ) {
+                ScreenTitle("Editar Perfil", Modifier.padding(top = 8.dp))
                 ScreenSubtitle(
-                    text = if (cargaError) "No se pudo cargar el perfil." else "Cargando perfil...",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp)
-                )
-            }
-
-            val current = perfil
-            LifterCard(Modifier.padding(top = 16.dp)) {
-                InfoRow("Nombre", current?.name?.ifEmpty { "Sin nombre" } ?: "")
-                InfoRow("Correo", email.ifEmpty { "—" })
-                InfoRow("Año de nacimiento", if (current?.birthYear ?: 0 > 0) current!!.birthYear.toString() else "—")
-                InfoRow("Sexo", current?.gender?.ifEmpty { "—" } ?: "—")
-            }
-
-            LifterCard(Modifier.padding(top = 16.dp)) {
-                CardTitle("Medidas (editable)")
-
-                FieldLabel("Altura (cm)", Modifier.padding(top = 16.dp))
-                Spacer(Modifier.height(4.dp))
-                LifterTextField(
-                    value = altura,
-                    onValueChange = { altura = it },
-                    label = "Ej. 175 cm",
-                    keyboardType = KeyboardType.Decimal
+                    text = "Actualiza tus datos personales y medidas corporales.",
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                 )
 
-                FieldLabel("Peso corporal (kg)", Modifier.padding(top = 16.dp))
-                Spacer(Modifier.height(4.dp))
-                LifterTextField(
-                    value = peso,
-                    onValueChange = { peso = it },
-                    label = "Ej. 80 kg",
-                    keyboardType = KeyboardType.Decimal
-                )
-            }
-
-            if (mensajeError.isNotEmpty() && !cargando) {
-                Spacer(Modifier.height(12.dp))
-                ErrorText(mensajeError, Modifier.fillMaxWidth())
-            }
-
-            Spacer(Modifier.height(20.dp))
-            PrimaryButton(
-                text = if (guardando) "Guardando..." else "Guardar Cambios",
-                onClick = {
-                    guardando = true
-                    mensajeError = ""
-                    postGuardar(
-                        userId = userId,
-                        altura = altura,
-                        peso = peso,
-                        scope = scope,
-                        context = context,
-                        profileRepository = profileRepository,
-                        onError = { msg ->
-                            guardando = false
-                            mensajeError = msg
-                        },
-                        onSuccess = {
-                            guardando = false
-                            mensajeError = ""
-                            context.toast("Perfil actualizado")
-                        }
+                if (cargando) {
+                    ScreenSubtitle(
+                        text = if (cargaError) "No se pudo cargar el perfil." else "Cargando perfil...",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp)
                     )
-                },
-                enabled = !guardando
-            )
+                }
 
-            Spacer(Modifier.height(12.dp))
-            SecondaryButton(
-                text = "Volver al Perfil",
-                onClick = { onBack() },
-                minHeight = 52.dp
-            )
+                val current = perfil
+                LifterCard(Modifier.padding(top = 16.dp)) {
+                    InfoRow("Nombre", current?.name?.ifEmpty { "Sin nombre" } ?: "")
+                    InfoRow("Correo", email.ifEmpty { "—" })
+                    InfoRow("Año de nacimiento", if (current?.birthYear ?: 0 > 0) current!!.birthYear.toString() else "—")
+                    InfoRow("Sexo", current?.gender?.ifEmpty { "—" } ?: "—")
+                }
+
+                LifterCard(Modifier.padding(top = 16.dp)) {
+                    CardTitle("Medidas (editable)")
+
+                    FieldLabel("Altura (cm)", Modifier.padding(top = 16.dp))
+                    Spacer(Modifier.height(4.dp))
+                    LifterTextField(
+                        value = altura,
+                        onValueChange = { altura = it },
+                        label = "Ej. 175 cm",
+                        keyboardType = KeyboardType.Decimal
+                    )
+
+                    FieldLabel("Peso corporal (kg)", Modifier.padding(top = 16.dp))
+                    Spacer(Modifier.height(4.dp))
+                    LifterTextField(
+                        value = peso,
+                        onValueChange = { peso = it },
+                        label = "Ej. 80 kg",
+                        keyboardType = KeyboardType.Decimal
+                    )
+                }
+
+                if (mensajeError.isNotEmpty() && !cargando) {
+                    Spacer(Modifier.height(12.dp))
+                    ErrorText(mensajeError, Modifier.fillMaxWidth())
+                }
+
+                Spacer(Modifier.height(20.dp))
+                PrimaryButton(
+                    text = if (guardando) "Guardando..." else "Guardar Cambios",
+                    onClick = {
+                        guardando = true
+                        mensajeError = ""
+                        postGuardar(
+                            userId = userId,
+                            altura = altura,
+                            peso = peso,
+                            scope = scope,
+                            context = context,
+                            profileRepository = profileRepository,
+                            onError = { msg ->
+                                guardando = false
+                                mensajeError = msg
+                            },
+                            onSuccess = {
+                                guardando = false
+                                mensajeError = ""
+                                context.toast("Perfil actualizado")
+                            }
+                        )
+                    },
+                    enabled = !guardando
+                )
+
+                Spacer(Modifier.height(12.dp))
+                SecondaryButton(
+                    text = "Volver al Perfil",
+                    onClick = { onBack() },
+                    minHeight = 52.dp
+                )
+            }
         }
     }
 }

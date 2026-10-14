@@ -334,10 +334,18 @@ fun SteelOutlineButton(
     }
 }
 
-/** Barra superior del módulo: marca "LifterLab" con botón de regreso. */
+/**
+ * Barra superior del módulo: marca "LifterLab" con filete inferior, replicada en todas
+ * las vistas de la app.
+ *
+ * El botón de regreso solo se muestra en los módulos que se abren desde la vista de un
+ * botón del menú (p. ej. Calculadora de Aproximación o Editar Perfil). Las vistas raíz
+ * de la barra flotante (Inicio, Rutinas, Herramientas, Perfil) se invocan sin [onBack]
+ * y muestran únicamente la marca.
+ */
 @Composable
 fun RoutineTopBar(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -353,12 +361,14 @@ fun RoutineTopBar(
                 .height(56.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RoundIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Volver",
-                onClick = onBack
-            )
-            Spacer(Modifier.size(10.dp))
+            if (onBack != null) {
+                RoundIconButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    onClick = onBack
+                )
+                Spacer(Modifier.size(10.dp))
+            }
             Icon(
                 imageVector = Icons.Filled.FitnessCenter,
                 contentDescription = null,

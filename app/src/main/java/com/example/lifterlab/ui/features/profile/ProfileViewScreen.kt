@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -47,6 +46,7 @@ import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.SbdStatCard
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.ui.formatKg
 import com.example.lifterlab.ui.formatSessionDate
 import com.example.lifterlab.ui.formatVolumeKg
@@ -93,135 +93,140 @@ fun ProfileViewScreen(
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
-        ) {
-            ScreenTitle("Perfil", Modifier.padding(top = 8.dp))
+        Column(modifier = Modifier.fillMaxSize()) {
 
-            val current = perfil
-            val nombreUsuario = current?.name?.ifEmpty { null } ?: email.substringBefore("@").ifEmpty { null }
+            // Vista raíz del menú: panel de marca sin botón de volver.
+            RoutineTopBar()
 
-            LifterCard(Modifier.padding(top = 16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    ProfileAvatar(
-                        iniciales = inicialesDe(nombreUsuario),
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Column(Modifier.padding(start = 16.dp)) {
-                        Text(
-                            text = nombreUsuario ?: "Atleta",
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(bottom = 104.dp)
+            ) {
+                ScreenTitle("Perfil", Modifier.padding(top = 8.dp))
+
+                val current = perfil
+                val nombreUsuario = current?.name?.ifEmpty { null } ?: email.substringBefore("@").ifEmpty { null }
+
+                LifterCard(Modifier.padding(top = 16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ProfileAvatar(
+                            iniciales = inicialesDe(nombreUsuario),
+                            modifier = Modifier.size(64.dp)
                         )
-                        Text(
-                            text = email.ifEmpty { "Sin correo" },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-
-                if (current != null) {
-                    Row(
-                        modifier = Modifier.padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        ChippedTag("${current.streakDays} DÍAS DE RACHA")
-                        ChippedTag("CICLO ${current.currentCycleWeek} - ${current.cyclePhase}")
-                    }
-                }
-            }
-
-            PrimaryButton(
-                text = "Editar Perfil",
-                onClick = { onNavigateToEdit() },
-                modifier = Modifier.padding(top = 16.dp)
-            )
-
-            if (cargando) {
-                CardCaption("CARGANDO PERFIL", Modifier.padding(top = 24.dp))
-            }
-
-            SbdStatCard(
-                title = "Sentadilla",
-                badgeText = "1RM",
-                badgeNeutral = true,
-                weightText = formatKg(current?.squat1RM ?: 0.0),
-                goalText = calculateGoalPercent(current?.squat1RM ?: 0.0, current?.squatGoalKg ?: 0.0),
-                fraction = progressFraction(current?.squat1RM ?: 0.0, current?.squatGoalKg ?: 0.0),
-                modifier = Modifier.padding(top = 16.dp)
-            )
-            SbdStatCard(
-                title = "Press Banca",
-                badgeText = "1RM",
-                badgeNeutral = true,
-                weightText = formatKg(current?.bench1RM ?: 0.0),
-                goalText = calculateGoalPercent(current?.bench1RM ?: 0.0, current?.benchGoalKg ?: 0.0),
-                fraction = progressFraction(current?.bench1RM ?: 0.0, current?.benchGoalKg ?: 0.0),
-                modifier = Modifier.padding(top = 16.dp)
-            )
-            SbdStatCard(
-                title = "Peso Muerto",
-                badgeText = "1RM",
-                badgeNeutral = true,
-                weightText = formatKg(current?.deadlift1RM ?: 0.0),
-                goalText = calculateGoalPercent(current?.deadlift1RM ?: 0.0, current?.deadliftGoalKg ?: 0.0),
-                fraction = progressFraction(current?.deadlift1RM ?: 0.0, current?.deadliftGoalKg ?: 0.0),
-                modifier = Modifier.padding(top = 16.dp)
-            )
-
-            LifterCard(Modifier.padding(top = 16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CardTitle("Historial de Entrenamientos", Modifier.weight(1f))
-                    Text(
-                        text = if (sesiones.isEmpty()) "" else "${sesiones.size}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-
-                when {
-                    historialCargando -> CardCaption("CARGANDO HISTORIAL", Modifier.padding(top = 16.dp))
-
-                    sesiones.isEmpty() -> {
-                        CardCaption("SIN SESIONES REGISTRADAS", Modifier.padding(top = 16.dp))
-                        Text(
-                            text = "Cuando completes un entrenamiento en el Modo Gimnasio " +
-                                "verás aquí el detalle de cada sesión.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(top = 6.dp)
-                        )
-                    }
-
-                    else -> {
-                        sesiones.forEachIndexed { index, sesion ->
-                            SessionRow(
-                                session = sesion,
-                                mostrarSeparador = index < sesiones.lastIndex
+                        Column(Modifier.padding(start = 16.dp)) {
+                            Text(
+                                text = nombreUsuario ?: "Atleta",
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = email.ifEmpty { "Sin correo" },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
-                }
-            }
 
-            SecondaryButton(
-                text = "Cerrar Sesión",
-                onClick = { onSignOut() },
-                modifier = Modifier.padding(top = 20.dp),
-                minHeight = 52.dp
-            )
+                    if (current != null) {
+                        Row(
+                            modifier = Modifier.padding(top = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ChippedTag("${current.streakDays} DÍAS DE RACHA")
+                            ChippedTag("CICLO ${current.currentCycleWeek} - ${current.cyclePhase}")
+                        }
+                    }
+                }
+
+                PrimaryButton(
+                    text = "Editar Perfil",
+                    onClick = { onNavigateToEdit() },
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+
+                if (cargando) {
+                    CardCaption("CARGANDO PERFIL", Modifier.padding(top = 24.dp))
+                }
+
+                SbdStatCard(
+                    title = "Sentadilla",
+                    badgeText = "1RM",
+                    badgeNeutral = true,
+                    weightText = formatKg(current?.squat1RM ?: 0.0),
+                    goalText = calculateGoalPercent(current?.squat1RM ?: 0.0, current?.squatGoalKg ?: 0.0),
+                    fraction = progressFraction(current?.squat1RM ?: 0.0, current?.squatGoalKg ?: 0.0),
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                SbdStatCard(
+                    title = "Press Banca",
+                    badgeText = "1RM",
+                    badgeNeutral = true,
+                    weightText = formatKg(current?.bench1RM ?: 0.0),
+                    goalText = calculateGoalPercent(current?.bench1RM ?: 0.0, current?.benchGoalKg ?: 0.0),
+                    fraction = progressFraction(current?.bench1RM ?: 0.0, current?.benchGoalKg ?: 0.0),
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                SbdStatCard(
+                    title = "Peso Muerto",
+                    badgeText = "1RM",
+                    badgeNeutral = true,
+                    weightText = formatKg(current?.deadlift1RM ?: 0.0),
+                    goalText = calculateGoalPercent(current?.deadlift1RM ?: 0.0, current?.deadliftGoalKg ?: 0.0),
+                    fraction = progressFraction(current?.deadlift1RM ?: 0.0, current?.deadliftGoalKg ?: 0.0),
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+
+                LifterCard(Modifier.padding(top = 16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CardTitle("Historial de Entrenamientos", Modifier.weight(1f))
+                        Text(
+                            text = if (sesiones.isEmpty()) "" else "${sesiones.size}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+
+                    when {
+                        historialCargando -> CardCaption("CARGANDO HISTORIAL", Modifier.padding(top = 16.dp))
+
+                        sesiones.isEmpty() -> {
+                            CardCaption("SIN SESIONES REGISTRADAS", Modifier.padding(top = 16.dp))
+                            Text(
+                                text = "Cuando completes un entrenamiento en el Modo Gimnasio " +
+                                    "verás aquí el detalle de cada sesión.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(top = 6.dp)
+                            )
+                        }
+
+                        else -> {
+                            sesiones.forEachIndexed { index, sesion ->
+                                SessionRow(
+                                    session = sesion,
+                                    mostrarSeparador = index < sesiones.lastIndex
+                                )
+                            }
+                        }
+                    }
+                }
+
+                SecondaryButton(
+                    text = "Cerrar Sesión",
+                    onClick = { onSignOut() },
+                    modifier = Modifier.padding(top = 20.dp),
+                    minHeight = 52.dp
+                )
+            }
         }
     }
 }

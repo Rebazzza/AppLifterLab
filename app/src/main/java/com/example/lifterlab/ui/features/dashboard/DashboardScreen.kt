@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -54,7 +53,7 @@ import com.example.lifterlab.ui.components.ChippedTag
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.SbdStatCard
 import com.example.lifterlab.ui.components.SecondaryButton
-import com.example.lifterlab.ui.components.ScreenTitle
+import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.ui.formatKg
 import com.example.lifterlab.ui.formatSessionDate
 import com.example.lifterlab.ui.formatVolumeKg
@@ -94,29 +93,32 @@ fun DashboardScreen(
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(top = 16.dp)
-                .padding(bottom = 104.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            // Vista raíz del menú: panel de marca sin botón de volver.
+            RoutineTopBar()
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 16.dp)
+                    .padding(bottom = 104.dp)
             ) {
-                Column(Modifier.weight(1f)) {
-                    ScreenTitle("LIFTERLAB", Modifier.padding(top = 8.dp))
-                    Text(
-                        text = "CICLO ACTUAL: SEMANA ${profile.currentCycleWeek} / ${profile.cyclePhase}",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
-                    )
-                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = "CICLO ACTUAL: SEMANA ${profile.currentCycleWeek} / ${profile.cyclePhase}",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+                        )
+                    }
 
                 Icon(
                     imageVector = Icons.Filled.Person,
@@ -175,7 +177,8 @@ fun DashboardScreen(
                 onNavigateToRoutines = onNavigateToRoutines
             )
 
-            AlertBanner()
+                AlertBanner()
+            }
         }
     }
 }

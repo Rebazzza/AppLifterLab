@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +32,7 @@ import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.LifterTextField
 import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,95 +54,92 @@ fun LoginScreen(
     val context = LocalContext.current
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "LifterLab",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 32.dp)
-            )
+        Column(modifier = Modifier.fillMaxSize()) {
 
-            Text(
-                text = "Inicia sesión para acceder a tu entrenamiento",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
-            )
+            // Vista raíz del flujo de acceso: panel de marca sin botón de volver.
+            RoutineTopBar()
 
-            LifterCard {
-                FieldLabel("Correo electrónico")
-                Spacer(Modifier.height(4.dp))
-                LifterTextField(
-                    value = correo,
-                    onValueChange = { correo = it },
-                    label = "tucorreo@example.com",
-                    keyboardType = KeyboardType.Email
-
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Inicia sesión para acceder a tu entrenamiento",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 24.dp)
                 )
 
+                LifterCard {
+                    FieldLabel("Correo electrónico")
+                    Spacer(Modifier.height(4.dp))
+                    LifterTextField(
+                        value = correo,
+                        onValueChange = { correo = it },
+                        label = "tucorreo@example.com",
+                        keyboardType = KeyboardType.Email
 
-                Spacer(Modifier.height(16.dp))
-                LifterTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = "Contraseña",
-                    isPassword = true
-                )
+                    )
 
-                if (mensajeError.isNotEmpty()) {
+
+                    Spacer(Modifier.height(16.dp))
+                    LifterTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Contraseña",
+                        isPassword = true
+                    )
+
+                    if (mensajeError.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        ErrorText(mensajeError, Modifier.fillMaxWidth())
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    PrimaryButton(
+                        text = if (cargando) "Ingresando..." else "Iniciar Sesión",
+                        onClick = {
+                            cargando = true
+                            mensajeError = ""
+                            postLogin(
+                                correo = correo,
+                                password = password,
+                                scope = scope,
+                                context = context,
+                                authRepository = authRepository,
+                                onError = { emp ->
+                                    cargando = false
+                                    mensajeError = emp
+                                },
+                                onSuccess = {
+                                    cargando = false
+                                    context.toast("¡Bienvenido de nuevo!")
+                                    onLoginSuccess()
+                                }
+                            )
+                        },
+                        enabled = !cargando
+                    )
+
                     Spacer(Modifier.height(8.dp))
-                    ErrorText(mensajeError, Modifier.fillMaxWidth())
+                    SecondaryButton(
+                        text = "¿Olvidaste tu contraseña?",
+                        onClick = { context.toast("Pronto podrás recuperar tu contraseña") }
+                    )
                 }
 
-                Spacer(Modifier.height(24.dp))
-                PrimaryButton(
-                    text = if (cargando) "Ingresando..." else "Iniciar Sesión",
-                    onClick = {
-                        cargando = true
-                        mensajeError = ""
-                        postLogin(
-                            correo = correo,
-                            password = password,
-                            scope = scope,
-                            context = context,
-                            authRepository = authRepository,
-                            onError = { emp ->
-                                cargando = false
-                                mensajeError = emp
-                            },
-                            onSuccess = {
-                                cargando = false
-                                context.toast("¡Bienvenido de nuevo!")
-                                onLoginSuccess()
-                            }
-                        )
-                    },
-                    enabled = !cargando
-                )
-
-                Spacer(Modifier.height(8.dp))
-                SecondaryButton(
-                    text = "¿Olvidaste tu contraseña?",
-                    onClick = { context.toast("Pronto podrás recuperar tu contraseña") }
+                Text(
+                    text = "¿No tienes cuenta? Regístrate",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 15.sp,
+                    modifier = Modifier
+                        .clickable { onNavigateToRegister() }
+                        .padding(top = 20.dp)
                 )
             }
-
-            Text(
-                text = "¿No tienes cuenta? Regístrate",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 15.sp,
-                modifier = Modifier
-                    .clickable { onNavigateToRegister() }
-                    .padding(top = 20.dp)
-            )
 
 
         }

@@ -36,6 +36,8 @@ import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.features.customexercises.CustomExercisesPanel
+import com.example.lifterlab.ui.features.routines.RoutineSkin
+import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.ui.features.routines.catalogExercises
 
 enum class CatalogTab {
@@ -54,21 +56,17 @@ enum class CatalogTab {
 fun CatalogScreen(onBack: () -> Unit) {
     var tab by remember { mutableStateOf(CatalogTab.Global) }
 
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+    Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
+
+            RoutineTopBar(onBack = onBack)
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 18.dp)
             ) {
-                Text(
-                    text = "← Volver",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 15.sp,
-                    modifier = Modifier.clickable { onBack() }
-                )
-                ScreenTitle("Catálogos", Modifier.padding(top = 8.dp))
+                ScreenTitle("Catálogos")
                 ScreenSubtitle(
                     "Catálogo global y tus ejercicios personalizados.",
                     Modifier.padding(top = 4.dp)
@@ -78,7 +76,7 @@ fun CatalogScreen(onBack: () -> Unit) {
             CatalogTabPanel(
                 current = tab,
                 onSelect = { tab = it },
-                modifier = Modifier.padding(horizontal = 20.dp)
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Spacer(Modifier.height(12.dp))
@@ -162,7 +160,7 @@ private fun GlobalCatalogPanel(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 16.dp)
             .padding(bottom = 104.dp)
     ) {
         LifterCard {

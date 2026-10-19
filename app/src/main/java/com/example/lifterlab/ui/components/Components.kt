@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.ui.theme.NavBarSurface
@@ -57,6 +61,16 @@ import com.example.lifterlab.ui.theme.PrimaryAccent
 
 val CardCornerRadius = 12.dp
 val FieldCornerRadius = 12.dp
+
+/**
+ * Cola reservada al final de una vista con scroll para que su último contenido nunca
+ * quede tapado por la barra de navegación flotante (que se monta encima del contenido
+ * desde MainActivity): la altura real del menú (inset de navegación + ~90 dp) más un
+ * margen de 104 dp.
+ */
+@Composable
+fun bottomBarClearance(): Dp =
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 104.dp
 
 /** Pestañas de la barra de navegación global. */
 enum class LifterTab {

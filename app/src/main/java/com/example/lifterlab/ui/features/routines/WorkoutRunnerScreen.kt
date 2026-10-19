@@ -25,6 +25,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +41,7 @@ import com.example.lifterlab.data.repository.CustomExerciseRepository
 import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.toast
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.warmup.WarmupCalculatorDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -79,6 +82,11 @@ fun WorkoutRunnerScreen(
     var showAddExerciseDialog by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
 
+    // True en cuanto el atleta registra algo (serie, reorder, ejercicio). Evita que la
+    // carga de la sesión guardada (asíncrona) sobrescriba esos cambios y "devuelva" los
+    // ejercicios al lugar de antes.
+    var usuarioInteractuo by remember { mutableStateOf(false) }
+
     // Calculadora de Aproximación: peso de la barra base desde el perfil.
     var showWarmupCalculator by remember { mutableStateOf(false) }
     var baseBarWeightKg by remember { mutableStateOf(20.0) }
@@ -108,6 +116,7 @@ fun WorkoutRunnerScreen(
     }
 
     fun actualizarSesion(cambio: (Routine) -> Routine) {
+        usuarioInteractuo = true
         activeRoutine = cambio(activeRoutine)
         scope.launch { persistirSesion() }
     }
@@ -127,6 +136,9 @@ fun WorkoutRunnerScreen(
 
             val guardada = withContext(Dispatchers.IO) { activeSessionRepository.getActiveSession() }
             guardada.onSuccess { saved ->
+                // Si el atleta ya reordenó o registró series mientras cargaba la
+                // sesión guardada, no se sobrescribe lo que hizo.
+                if (usuarioInteractuo) return@onSuccess
                 if (saved != null && saved.matchesRoutine(routine, isExpress)) {
                     activeRoutine = activeRoutine.copy(exercises = saved.exercises)
                     startedAt = saved.startedAtMillis
@@ -157,6 +169,9 @@ fun WorkoutRunnerScreen(
         dragState.syncSize(activeRoutine.exercises.size)
     }
 
+    // Lista con scroll: sirve para posicionar la región visible (auto-scroll al arrastrar).
+    val scrollState = rememberScrollState()
+
     Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -165,9 +180,13 @@ fun WorkoutRunnerScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
+                    .onGloballyPositioned { coords ->
+                        val top = coords.positionInWindow()
+                        dragState.setViewport(top.y, coords.size.height.toFloat())
+                    }
                     .padding(horizontal = 16.dp, vertical = 18.dp)
-                    .padding(bottom = 104.dp)
+                    .padding(bottom = bottomBarClearance())
             ) {
                 Text(
                     text = if (isExpress) "Rutina Express" else activeRoutine.name,
@@ -210,6 +229,7 @@ fun WorkoutRunnerScreen(
                             onClick = {
                                 scope.launch {
                                     withContext(Dispatchers.IO) { activeSessionRepository.clearActiveSession() }
+                                    usuarioInteractuo = true
                                     activeRoutine = routine
                                     startedAt = System.currentTimeMillis()
                                     sesionReanudada = false
@@ -293,6 +313,9 @@ fun WorkoutRunnerScreen(
             }
         }
     }
+
+    // Mientras se arrastra, la lista sigue sola cuando la tarjeta toca los bordes.
+    AutoScrollWhileDragging(dragState, scrollState)
 
     if (showAddExerciseDialog) {
         ExercisePickerDialog(

@@ -47,6 +47,7 @@ import com.example.lifterlab.ui.components.ErrorText
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.formatKg
 
 /**
@@ -56,13 +57,6 @@ import com.example.lifterlab.ui.formatKg
  */
 @Composable
 fun PlateLoaderScreen(onBack: () -> Unit) {
-    var targetText by remember { mutableStateOf("") }
-    var withCollars by remember { mutableStateOf(false) }
-
-    val target = targetText.replace(',', '.').toDoubleOrNull()
-    val error = PlateCalculator.validate(target)
-    val load = if (error == null && target != null) PlateCalculator.compute(target, withCollars) else null
-
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -70,7 +64,7 @@ fun PlateLoaderScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
+                .padding(bottom = bottomBarClearance())
         ) {
             Text(
                 text = "← Volver",
@@ -83,84 +77,116 @@ fun PlateLoaderScreen(onBack: () -> Unit) {
                 "Discos IPF por lado con barra de ${formatKg(PlateCalculator.BAR_KG)} kg.",
                 Modifier.padding(top = 8.dp, bottom = 16.dp)
             )
+            PlateLoaderPanel()
+        }
+    }
+}
 
-            LifterCard {
-                ToolField(
-                    value = targetText,
-                    onValueChange = { targetText = it },
-                    label = "Peso objetivo (kg)",
-                    keyboardType = KeyboardType.Decimal,
-                    modifier = Modifier.fillMaxWidth()
+/**
+ * RF07 — Cuerpo reutilizable del visualizador de carga de barra (acceso directo desde el
+ * Inicio y panel dentro del módulo Herramientas).
+ *
+ * @param barKg peso de la barra base usada para armar la carga.
+ */
+@Composable
+internal fun PlateLoaderPanel(
+    barKg: Double = PlateCalculator.BAR_KG,
+    modifier: Modifier = Modifier
+) {
+    var targetText by remember { mutableStateOf("") }
+    var withCollars by remember { mutableStateOf(false) }
+
+    val target = targetText.replace(',', '.').toDoubleOrNull()
+    val error = PlateCalculator.validate(target)
+    val load = if (error == null && target != null) {
+        PlateCalculator.compute(target, withCollars, barKg)
+    } else {
+        null
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        LifterCard {
+            ToolField(
+                value = targetText,
+                onValueChange = { targetText = it },
+                label = "Peso objetivo (kg)",
+                keyboardType = KeyboardType.Decimal,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { withCollars = !withCollars }
+                    .padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(checked = withCollars, onCheckedChange = { withCollars = it })
+                Text(
+                    text = "Usar seguros (${formatKg(PlateCalculator.COLLARS_TOTAL_KG)} kg en total)",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { withCollars = !withCollars }
-                        .padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(checked = withCollars, onCheckedChange = { withCollars = it })
+            }
+        }
+
+        if (targetText.isNotBlank() && error != null) {
+            ErrorText(error, Modifier.fillMaxWidth().padding(top = 12.dp))
+        }
+
+        if (load != null) {
+            if (!load.isExact) {
+                NotLoadableBanner(
+                    load = load,
+                    onSelectTarget = { targetText = formatKg(it) }
+                )
+            }
+
+            LifterCard(Modifier.padding(top = 16.dp)) {
+                CardCaption(if (load.isExact) "CARGA EXACTA" else "CARGA MÁS CERCANA POR DEBAJO", mono = true)
+                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 4.dp)) {
                     Text(
-                        text = "Usar seguros (${formatKg(PlateCalculator.COLLARS_TOTAL_KG)} kg en total)",
+                        text = formatKg(load.loadedKg),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 38.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Text(
+                        text = " KG",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-
-            if (targetText.isNotBlank() && error != null) {
-                ErrorText(error, Modifier.fillMaxWidth().padding(top = 12.dp))
-            }
-
-            if (load != null) {
-                if (!load.isExact) {
-                    NotLoadableBanner(
-                        load = load,
-                        onSelectTarget = { targetText = formatKg(it) }
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(bottom = 6.dp)
                     )
                 }
 
-                LifterCard(Modifier.padding(top = 16.dp)) {
-                    CardCaption(if (load.isExact) "CARGA EXACTA" else "CARGA MÁS CERCANA POR DEBAJO", mono = true)
-                    Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 4.dp)) {
-                        Text(
-                            text = formatKg(load.loadedKg),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontSize = 38.sp,
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Text(
-                            text = " KG",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        )
-                    }
+                CardCaption(
+                    "BARRA ${formatKg(load.barKg)} KG",
+                    Modifier.padding(top = 8.dp),
+                    mono = true
+                )
 
-                    BarbellCanvas(load, Modifier.padding(top = 16.dp))
+                BarbellCanvas(load, Modifier.padding(top = 16.dp))
 
-                    if (load.perSide.isEmpty()) {
-                        Text(
-                            text = "Solo la barra: sin discos.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(top = 12.dp)
-                        )
-                    } else {
-                        CardCaption("POR LADO", Modifier.padding(top = 16.dp), mono = true)
-                        load.perSide.groupingBy { it }.eachCount().forEach { (plate, count) ->
-                            PlateLegendRow(plate, count)
-                        }
+                if (load.perSide.isEmpty()) {
+                    Text(
+                        text = "Solo la barra: sin discos.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                } else {
+                    CardCaption("POR LADO", Modifier.padding(top = 16.dp), mono = true)
+                    load.perSide.groupingBy { it }.eachCount().forEach { (plate, count) ->
+                        PlateLegendRow(plate, count)
                     }
-                    if (load.collarsTotalKg > 0) {
-                        CardCaption(
-                            "+ Seguros: ${formatKg(load.collarsTotalKg / 2)} kg por lado",
-                            Modifier.padding(top = 10.dp),
-                            mono = true
-                        )
-                    }
+                }
+                if (load.collarsTotalKg > 0) {
+                    CardCaption(
+                        "+ Seguros: ${formatKg(load.collarsTotalKg / 2)} kg por lado",
+                        Modifier.padding(top = 10.dp),
+                        mono = true
+                    )
                 }
             }
         }

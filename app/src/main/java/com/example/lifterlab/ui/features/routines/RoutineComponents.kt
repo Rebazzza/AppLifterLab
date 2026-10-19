@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -31,6 +33,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -315,10 +319,12 @@ fun SetRow(
             Spacer(Modifier.size(6.dp))
 
             if (gymMode) {
-                DarkValueBox(
-                    text = rpeLabel(set.rpe),
-                    weight = ColRpe,
-                    textColor = if (set.rpe > 0) RoutineSkin.Secondary else RoutineSkin.OnSurfaceVariant
+                // Modo Gimnasio: el @ es un selector. Tocarlo despliega la lista completa
+                // (@6 a @10 en pasos de 0.5) sin esperar a completar la serie.
+                RpeSelectBox(
+                    currentRpe = set.rpe,
+                    onSelect = { nuevoRpe -> onUpdate(setIndex, null, null, nuevoRpe, null) },
+                    weight = ColRpe
                 )
             } else {
                 DarkNumberField(
@@ -347,16 +353,6 @@ fun SetRow(
                     }
                 )
             }
-        }
-
-        // Modo Gimnasio: el selector de esfuerzo se despliega solo cuando la
-        // serie está completada, en una sola fila desplazable para no saturar la tarjeta.
-        if (gymMode && completed) {
-            RpeSelector(
-                currentRpe = set.rpe,
-                onSelect = { nuevoRpe -> onUpdate(setIndex, null, null, nuevoRpe ?: 0.0, null) },
-                modifier = Modifier.padding(top = 8.dp)
-            )
         }
     }
 }
@@ -464,6 +460,92 @@ fun RpeSelector(
                     .clickable { onSelect(if (seleccionado) null else option) }
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             )
+        }
+    }
+}
+
+/**
+ * Selector de esfuerzo percibido del Modo Gimnasio: caja con el valor actual
+ * ("—" si aún no se registra) que, al tocarla, despliega la lista de @6 a @10
+ * en pasos de 0.5 (@6, @6.5, @7 … @10). Elegir "Sin registro" limpia el RPE.
+ */
+@Composable
+fun RowScope.RpeSelectBox(
+    currentRpe: Double,
+    onSelect: (Double?) -> Unit,
+    weight: Float
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(6.dp)
+    val registrado = currentRpe > 0
+
+    Box(Modifier.weight(weight)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(RoutineSkin.InputBackground)
+                .border(
+                    BorderStroke(1.dp, if (expanded) RoutineSkin.Primary else RoutineSkin.SteelBorder),
+                    shape
+                )
+                .clickable { expanded = true }
+                .padding(vertical = 6.dp, horizontal = 2.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = rpeLabel(currentRpe),
+                color = if (registrado) RoutineSkin.Secondary else RoutineSkin.OnSurfaceVariant,
+                fontSize = 14.sp,
+                fontFamily = FontFamily.Monospace,
+                textAlign = TextAlign.Center
+            )
+            Icon(
+                imageVector = Icons.Filled.ArrowDropDown,
+                contentDescription = "Elegir esfuerzo percibido",
+                tint = RoutineSkin.OnSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(RoutineSkin.SurfaceContainer)
+        ) {
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "Sin registro",
+                        color = RoutineSkin.OnSurfaceVariant,
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onSelect(null)
+                }
+            )
+            rpeScale.forEach { option ->
+                val activo = abs(currentRpe - option) < 0.001
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "@${formatKg(option)}",
+                            color = if (activo) RoutineSkin.PrimaryText else RoutineSkin.OnSurface,
+                            fontSize = 14.sp,
+                            fontWeight = if (activo) FontWeight.Bold else FontWeight.Medium,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelect(option)
+                    }
+                )
+            }
         }
     }
 }

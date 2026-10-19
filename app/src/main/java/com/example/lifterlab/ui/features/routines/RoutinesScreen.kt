@@ -50,6 +50,7 @@ import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.toast
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.catalog.CatalogScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -145,7 +146,7 @@ private fun RoutinesListScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 18.dp)
-                    .padding(bottom = 104.dp)
+                    .padding(bottom = bottomBarClearance())
             ) {
                 Text(
                     text = "Rutinas",

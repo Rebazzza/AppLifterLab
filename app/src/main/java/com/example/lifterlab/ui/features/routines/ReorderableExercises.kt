@@ -1,19 +1,25 @@
 package com.example.lifterlab.ui.features.routines
 
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 
 /**
  * Reordenamiento de ejercicios por arrastre (drag-and-drop).
@@ -35,20 +41,54 @@ class ExerciseDragState {
     var dragDeltaY by mutableFloatStateOf(0f)
         private set
 
+    /** Altura de cada tarjeta (px), alineada con la lista en pantalla. */
     private val heights = mutableStateListOf<Float>()
+
+    /** Borde superior de cada tarjeta en la ventana (px), solo posición de layout. */
+    private val topsY = mutableStateListOf<Float>()
+
+    /** Borde superior de la tarjeta arrastrada al iniciar el gesto (px en ventana). */
+    private var dragStartTopY = 0f
+
+    /** Región visible del contenedor con scroll (px en ventana). */
+    var viewportTopY by mutableFloatStateOf(0f)
+        private set
+
+    var viewportHeightPx by mutableFloatStateOf(0f)
+        private set
 
     fun isDragging(index: Int): Boolean = draggingIndex == index
 
-    /** Mantiene la lista de alturas alineada con la cantidad de ejercicios en pantalla. */
+    /** Mantiene las listas alineadas con la cantidad de ejercicios en pantalla. */
     fun syncSize(count: Int) {
-        while (heights.size < count) heights.add(0f)
-        while (heights.size > count) heights.removeAt(heights.lastIndex)
+        while (heights.size < count) {
+            heights.add(0f)
+            topsY.add(0f)
+        }
+        while (heights.size > count) {
+            heights.removeAt(heights.lastIndex)
+            topsY.removeAt(topsY.lastIndex)
+        }
     }
 
-    fun setHeight(index: Int, heightPx: Float) {
-        if (index in heights.indices && heights[index] != heightPx) {
-            heights[index] = heightPx
+    /**
+     * Mide una tarjeta. Crece las listas si hace falta: así una medición que llega antes
+     * que [syncSize] nunca se descarta (si se descartara, las alturas quedarían en 0 y el
+     * arrastre seguiría al dedo sin reordenar nada).
+     */
+    fun setBounds(index: Int, topY: Float, heightPx: Float) {
+        while (heights.size <= index) {
+            heights.add(0f)
+            topsY.add(0f)
         }
+        heights[index] = heightPx
+        topsY[index] = topY
+    }
+
+    /** Región visible del contenedor con scroll, para el auto-scroll durante el arrastre. */
+    fun setViewport(topY: Float, heightPx: Float) {
+        viewportTopY = topY
+        viewportHeightPx = heightPx
     }
 
     /** Traslación total de la tarjeta en [index]: la arrastrada sigue al dedo y las
@@ -71,6 +111,7 @@ class ExerciseDragState {
         if (index !in heights.indices) return
         draggingIndex = index
         dragDeltaY = 0f
+        dragStartTopY = topsY[index]
     }
 
     internal fun drag(deltaY: Float) {
@@ -124,6 +165,29 @@ class ExerciseDragState {
         }
         return destino
     }
+
+    /**
+     * Desplazamiento de scroll (px con signo, positivo = hacia abajo) para mantener la
+     * tarjeta arrastrada dentro de la zona sensible [thresholdPx] de los bordes de la
+     * pantalla visible. Limita la velocidad a [maxSpeedPx] por frame. Devuelve 0 cuando
+     * la tarjeta está en zona segura o no hay arrastre en curso.
+     */
+    fun autoScrollDeltaPx(thresholdPx: Float, maxSpeedPx: Float): Float {
+        val dragged = draggingIndex
+        if (dragged < 0 || dragged !in heights.indices || viewportHeightPx <= 0f) return 0f
+
+        // Posición visual de la tarjeta = su posición de layout al iniciar + lo arrastrado.
+        val top = dragStartTopY + dragDeltaY
+        val bottom = top + heights[dragged]
+
+        val excedeAbajo = bottom - (viewportTopY + viewportHeightPx - thresholdPx)
+        if (excedeAbajo > 0f) return minOf(excedeAbajo, maxSpeedPx)
+
+        val excedeArriba = (viewportTopY + thresholdPx) - top
+        if (excedeArriba > 0f) return -minOf(excedeArriba, maxSpeedPx)
+
+        return 0f
+    }
 }
 
 @Composable
@@ -163,9 +227,36 @@ fun ReorderableExerciseItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .onSizeChanged { size -> state.setHeight(index, size.height.toFloat()) }
+            .onGloballyPositioned { coords ->
+                val top = coords.positionInWindow()
+                state.setBounds(index, top.y, coords.size.height.toFloat())
+            }
             .graphicsLayer { translationY = state.translationY(index) }
     ) {
         content()
+    }
+}
+
+/**
+ * Auto-scroll durante el arrastre: mientras la tarjeta arrastrada se acerca al borde
+ * superior o inferior de la pantalla, la lista se desplaza sola (y el arrastre sigue
+ * acumulando deltas para que la tarjeta no se despegue del dedo ni se salten cruces).
+ */
+@Composable
+fun AutoScrollWhileDragging(state: ExerciseDragState, scrollState: ScrollState) {
+    val density = LocalDensity.current
+    val thresholdPx = with(density) { 96.dp.toPx() }
+    val maxSpeedPx = with(density) { 16.dp.toPx() }
+
+    LaunchedEffect(state.draggingIndex) {
+        if (state.draggingIndex < 0) return@LaunchedEffect
+        while (true) {
+            withFrameNanos { }
+            val delta = state.autoScrollDeltaPx(thresholdPx, maxSpeedPx)
+            if (delta != 0f) {
+                scrollState.dispatchRawDelta(delta)
+                state.drag(delta)
+            }
+        }
     }
 }

@@ -220,7 +220,7 @@ fun RowScope.DarkNumberField(
     }
 }
 
-/** Valor no editable dentro de una caja "input-dark" (RPE en Modo Gimnasio). */
+/** Valor no editable dentro de una caja "input-dark" (referencia rápida de la serie). */
 @Composable
 fun RowScope.DarkValueBox(
     text: String,

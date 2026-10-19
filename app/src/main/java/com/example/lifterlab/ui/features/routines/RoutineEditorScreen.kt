@@ -29,6 +29,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +43,7 @@ import com.example.lifterlab.data.repository.CustomExerciseRepository
 import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.toast
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.warmup.WarmupCalculatorDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -99,6 +102,9 @@ fun RoutineEditorScreen(
         dragState.syncSize(activeRoutine.exercises.size)
     }
 
+    // Lista con scroll: sirve para posicionar la región visible (auto-scroll al arrastrar).
+    val scrollState = rememberScrollState()
+
     Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -107,9 +113,13 @@ fun RoutineEditorScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
+                    .onGloballyPositioned { coords ->
+                        val top = coords.positionInWindow()
+                        dragState.setViewport(top.y, coords.size.height.toFloat())
+                    }
                     .padding(horizontal = 16.dp, vertical = 18.dp)
-                    .padding(bottom = 104.dp)
+                    .padding(bottom = bottomBarClearance())
             ) {
                 Text(
                     text = if (routine.id.isBlank()) "Nueva Rutina" else "Editar Rutina",
@@ -224,6 +234,9 @@ fun RoutineEditorScreen(
             }
         }
     }
+
+    // Mientras se arrastra, la lista sigue sola cuando la tarjeta toca los bordes.
+    AutoScrollWhileDragging(dragState, scrollState)
 
     if (showAddExerciseDialog) {
         ExercisePickerDialog(

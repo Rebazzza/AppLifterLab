@@ -1,5 +1,6 @@
 package com.example.lifterlab.ui.features.auth
 
+import android.R
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -170,8 +171,13 @@ private fun postRegister(
 ) {
     val name = nombre.trim()
     val email = correo.trim()
+    val validacion = correoValidation(email)
     if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
         onError("Completa todos los campos.")
+        return
+    }
+    if(validacion!=""){
+        onError(validacion)
         return
     }
     if (password.length < 6) {
@@ -192,4 +198,21 @@ private fun postRegister(
             .onSuccess { onSuccess() }
             .onFailure { e -> onError(e.message ?: "No se pudo crear la cuenta.") }
     }
+
 }
+fun correoValidation(correo: String) : String{
+    if(!correo.contains("@")){
+        return "Ingresa un formato de correo valida"
+    }
+    else{
+        val split = correo.split("@")
+        if(split[0].isEmpty() || split[1].isEmpty()){
+            return "Ingresa un formato de correo valida"
+        }
+        if(!split[1].contains(".")){
+            return "Ingresa un formato de correo valida"
+        }
+        return ""
+    }
+}
+

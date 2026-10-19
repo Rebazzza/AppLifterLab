@@ -62,6 +62,7 @@ import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.routines.ExerciseCard
 import com.example.lifterlab.ui.features.routines.ExercisePickerDialog
 import com.example.lifterlab.ui.features.routines.addExercise
@@ -123,7 +124,8 @@ fun HistoryScreen(
             onOpen = { selected = it }
         )
     } else {
-        SessionEditor(
+        // Detalle en solo lectura; el editor se abre desde el botón "Editar Sesión".
+        SessionDetailFlow(
             session = current,
             userId = userId,
             warmupRepository = warmupRepository,
@@ -151,7 +153,7 @@ private fun HistoryList(
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
+                .padding(bottom = bottomBarClearance())
         ) {
             Text(
                 text = "← Volver",
@@ -219,8 +221,13 @@ private fun SessionRow(session: WorkoutSession, onClick: () -> Unit) {
     }
 }
 
+/**
+ * RF17 — Editor de una sesión finalizada: corrige peso, repeticiones, RPE, ejercicios o
+ * elimina la sesión. Se abre desde [SessionDetailFlow] cuando el atleta pide editar, con
+ * todos los datos de la sesión ya cargados y las series marcadas.
+ */
 @Composable
-private fun SessionEditor(
+internal fun SessionEditor(
     session: WorkoutSession,
     userId: String,
     warmupRepository: WarmupRepository,
@@ -261,7 +268,7 @@ private fun SessionEditor(
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
+                .padding(bottom = bottomBarClearance())
         ) {
             Text(
                 text = "← Volver",

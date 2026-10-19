@@ -11,8 +11,8 @@ object OneRepMax {
     /** Por encima de ~12 repeticiones las fórmulas pierden precisión. */
     const val MAX_REPS = 12
 
-    /** Porcentajes de aproximación del 1RM (agent.md, RF06/RF08). */
-    val APPROACH_PERCENTS = listOf(70, 75, 80, 85, 90, 95)
+    /** Porcentajes de aproximación del 1RM (agent.md, RF06/RF08), incluido el 100% (el propio 1RM). */
+    val APPROACH_PERCENTS = listOf(70, 75, 80, 85, 90, 95, 100)
 
     fun brzycki(weightKg: Double, reps: Int): Double = weightKg * 36.0 / (37.0 - reps)
 

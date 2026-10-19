@@ -53,7 +53,9 @@ import com.example.lifterlab.ui.components.ChippedTag
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.SbdStatCard
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
+import com.example.lifterlab.ui.features.tools.ToolEntry
 import com.example.lifterlab.ui.formatKg
 import com.example.lifterlab.ui.formatSessionDate
 import com.example.lifterlab.ui.formatVolumeKg
@@ -71,6 +73,7 @@ fun DashboardScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToOneRepMax: () -> Unit,
     onNavigateToPlateLoader: () -> Unit,
+    onNavigateToTool: (ToolEntry) -> Unit,
     authRepository: AuthRepository = remember { AuthRepository() },
     profileRepository: ProfileRepository = remember { ProfileRepository() },
     warmupRepository: WarmupRepository = remember { WarmupRepository() }
@@ -107,7 +110,7 @@ fun DashboardScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp)
                     .padding(top = 16.dp)
-                    .padding(bottom = 104.dp)
+                    .padding(bottom = bottomBarClearance())
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -182,7 +185,8 @@ fun DashboardScreen(
 
             ToolsCard(
                 onNavigateToOneRepMax = onNavigateToOneRepMax,
-                onNavigateToPlateLoader = onNavigateToPlateLoader
+                onNavigateToPlateLoader = onNavigateToPlateLoader,
+                onNavigateToTool = onNavigateToTool
             )
 
                 AlertBanner()
@@ -381,11 +385,15 @@ private fun LastSessionCard(
 }
 
 @Composable
-private fun ToolsCard(onNavigateToOneRepMax: () -> Unit, onNavigateToPlateLoader: () -> Unit) {
+private fun ToolsCard(
+    onNavigateToOneRepMax: () -> Unit,
+    onNavigateToPlateLoader: () -> Unit,
+    onNavigateToTool: (ToolEntry) -> Unit
+) {
     LifterCard(Modifier.padding(top = 16.dp)) {
         CardTitle("Herramientas")
         Text(
-            text = "Calcula tu 1RM y arma la barra con discos IPF.",
+            text = "Calcula tu 1RM, arma la barra, prepara tus aproximaciones y administra tus ejercicios.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp,
             modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
@@ -399,6 +407,18 @@ private fun ToolsCard(onNavigateToOneRepMax: () -> Unit, onNavigateToPlateLoader
         SecondaryButton(
             text = "CARGA DE BARRA IPF →",
             onClick = onNavigateToPlateLoader,
+            minHeight = 46.dp
+        )
+        Spacer(Modifier.height(8.dp))
+        SecondaryButton(
+            text = "CALCULADORA DE APROXIMACIÓN →",
+            onClick = { onNavigateToTool(ToolEntry.WarmupCalculator) },
+            minHeight = 46.dp
+        )
+        Spacer(Modifier.height(8.dp))
+        SecondaryButton(
+            text = "EJERCICIOS PERSONALIZADOS →",
+            onClick = { onNavigateToTool(ToolEntry.CustomExercises) },
             minHeight = 46.dp
         )
     }

@@ -37,6 +37,7 @@ import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -93,7 +94,7 @@ fun ProfileEditScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .padding(bottom = 104.dp)
+                    .padding(bottom = bottomBarClearance())
             ) {
                 ScreenTitle("Editar Perfil", Modifier.padding(top = 8.dp))
                 ScreenSubtitle(

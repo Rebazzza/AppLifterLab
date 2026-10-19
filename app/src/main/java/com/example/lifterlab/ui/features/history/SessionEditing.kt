@@ -3,13 +3,6 @@ package com.example.lifterlab.ui.features.history
 import com.example.lifterlab.data.model.RoutineExercise
 import com.example.lifterlab.data.model.WorkoutSession
 import com.example.lifterlab.ui.features.tools.OneRepMax
-
-/**
- * RF17 — Valida las correcciones hechas a una sesión finalizada y arma el documento a guardar.
- *
- * Solo se conservan las series marcadas como completadas (desmarcar una serie la descarta).
- * El volumen total y el 1RM estimado de cada serie se recalculan con los valores corregidos.
- */
 fun buildEditedSession(
     original: WorkoutSession,
     exercises: List<RoutineExercise>

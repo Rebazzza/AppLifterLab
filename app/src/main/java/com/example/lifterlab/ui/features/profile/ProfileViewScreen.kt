@@ -1,8 +1,10 @@
 package com.example.lifterlab.ui.features.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,24 +49,29 @@ import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.SbdStatCard
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.components.bottomBarClearance
+import com.example.lifterlab.ui.features.history.SessionDetailFlow
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.ui.formatKg
 import com.example.lifterlab.ui.formatSessionDate
 import com.example.lifterlab.ui.formatVolumeKg
 import com.example.lifterlab.ui.progressFraction
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val HISTORIAL_LIMITE = 10
+private const val HISTORIAL_LIMITE = 20
 
 /**
  * Vista de perfil (solo lectura): foto, nombre de usuario, correo, acceso a la
  * edicion, estadisticas de ejercicios basicos e historial de entrenamientos.
+ * Tocar una sesion del historial abre su detalle (solo lectura) con salida al editor.
  * La edicion vive en [ProfileEditScreen].
  */
 @Composable
 fun ProfileViewScreen(
     onNavigateToEdit: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     onSignOut: () -> Unit,
     authRepository: AuthRepository = remember { AuthRepository() },
     profileRepository: ProfileRepository = remember { ProfileRepository() },
@@ -71,11 +79,24 @@ fun ProfileViewScreen(
 ) {
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     val email = remember { authRepository.getCurrentUser()?.email.orEmpty() }
+    val scope = rememberCoroutineScope()
 
     var perfil by remember { mutableStateOf<UserProfile?>(null) }
     var cargando by remember { mutableStateOf(true) }
     var sesiones by remember { mutableStateOf<List<WorkoutSession>>(emptyList()) }
     var historialCargando by remember { mutableStateOf(true) }
+    // Sesion abierta desde el historial: su detalle se muestra en modo solo lectura.
+    var sesionSeleccionada by remember { mutableStateOf<WorkoutSession?>(null) }
+
+    suspend fun recargarHistorial() {
+        if (userId.isEmpty()) {
+            historialCargando = false
+            return
+        }
+        withContext(Dispatchers.IO) { warmupRepository.getWorkoutSessions(userId, HISTORIAL_LIMITE) }
+            .onSuccess { historialCargando = false; sesiones = it }
+            .onFailure { historialCargando = false }
+    }
 
     LaunchedEffect(userId) {
         if (userId.isEmpty()) {
@@ -87,9 +108,27 @@ fun ProfileViewScreen(
             .onSuccess { cargando = false; perfil = it }
             .onFailure { cargando = false }
 
-        withContext(Dispatchers.IO) { warmupRepository.getWorkoutSessions(userId, HISTORIAL_LIMITE) }
-            .onSuccess { historialCargando = false; sesiones = it }
-            .onFailure { historialCargando = false }
+        recargarHistorial()
+    }
+
+    // Atras: del detalle de una sesion vuelve al perfil. Si ese detalle esta en modo
+    // edicion, su propio BackHandler (compuesto despues) tiene prioridad.
+    BackHandler(enabled = sesionSeleccionada != null) { sesionSeleccionada = null }
+
+    val sesionAbierta = sesionSeleccionada
+    if (sesionAbierta != null) {
+        // Detalle en solo lectura; el editor se abre desde "Editar Sesión".
+        SessionDetailFlow(
+            session = sesionAbierta,
+            userId = userId,
+            warmupRepository = warmupRepository,
+            onBack = { sesionSeleccionada = null },
+            onChanged = {
+                sesionSeleccionada = null
+                scope.launch { recargarHistorial() }
+            }
+        )
+        return
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
@@ -103,7 +142,7 @@ fun ProfileViewScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .padding(bottom = 104.dp)
+                    .padding(bottom = bottomBarClearance())
             ) {
                 ScreenTitle("Perfil", Modifier.padding(top = 8.dp))
 
@@ -213,7 +252,8 @@ fun ProfileViewScreen(
                             sesiones.forEachIndexed { index, sesion ->
                                 SessionRow(
                                     session = sesion,
-                                    mostrarSeparador = index < sesiones.lastIndex
+                                    mostrarSeparador = index < sesiones.lastIndex,
+                                    onClick = { sesionSeleccionada = sesion }
                                 )
                             }
                         }
@@ -221,9 +261,15 @@ fun ProfileViewScreen(
                 }
 
                 SecondaryButton(
+                    text = "Ver Historial Completo",
+                    onClick = { onNavigateToHistory() },
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+
+                SecondaryButton(
                     text = "Cerrar Sesión",
                     onClick = { onSignOut() },
-                    modifier = Modifier.padding(top = 20.dp),
+                    modifier = Modifier.padding(top = 12.dp),
                     minHeight = 52.dp
                 )
             }
@@ -268,10 +314,14 @@ private fun inicialesDe(nombre: String?): String {
     }
 }
 
-/** Fila del historial: fecha, rutina, volumen, duracion y ejercicios completados. */
+/** Fila del historial: fecha, rutina, volumen, duracion y ejercicios completados. Toca para ver el detalle. */
 @Composable
-private fun SessionRow(session: WorkoutSession, mostrarSeparador: Boolean) {
-    Column(Modifier.padding(top = 16.dp)) {
+private fun SessionRow(
+    session: WorkoutSession,
+    mostrarSeparador: Boolean,
+    onClick: () -> Unit
+) {
+    Column(Modifier.padding(top = 16.dp).clickable { onClick() }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically

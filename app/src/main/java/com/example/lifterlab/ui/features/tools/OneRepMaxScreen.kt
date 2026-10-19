@@ -43,6 +43,7 @@ import com.example.lifterlab.ui.components.FieldCornerRadius
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
+import com.example.lifterlab.ui.components.bottomBarClearance
 import java.util.Locale
 
 /**
@@ -51,14 +52,6 @@ import java.util.Locale
  */
 @Composable
 fun OneRepMaxScreen(onBack: () -> Unit) {
-    var weightText by remember { mutableStateOf("") }
-    var repsText by remember { mutableStateOf("") }
-
-    val weight = weightText.replace(',', '.').toDoubleOrNull()
-    val reps = repsText.toIntOrNull()
-    val hasInput = weightText.isNotBlank() || repsText.isNotBlank()
-    val error = OneRepMax.validate(weight, reps)
-
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -66,7 +59,7 @@ fun OneRepMaxScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
+                .padding(bottom = bottomBarClearance())
         ) {
             Text(
                 text = "← Volver",
@@ -79,94 +72,113 @@ fun OneRepMaxScreen(onBack: () -> Unit) {
                 "Estima tu repetición máxima a partir de una serie.",
                 Modifier.padding(top = 8.dp, bottom = 16.dp)
             )
+            OneRepMaxPanel()
+        }
+    }
+}
 
-            LifterCard {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ToolField(
-                        value = weightText,
-                        onValueChange = { weightText = it },
-                        label = "Peso (kg)",
-                        keyboardType = KeyboardType.Decimal,
-                        modifier = Modifier.weight(1f)
-                    )
-                    ToolField(
-                        value = repsText,
-                        onValueChange = { repsText = it.filter(Char::isDigit) },
-                        label = "Repeticiones",
-                        keyboardType = KeyboardType.Number,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                CardCaption(
-                    "Válido de 1 a ${OneRepMax.MAX_REPS} repeticiones.",
-                    Modifier.padding(top = 8.dp)
+/**
+ * RF06 — Cuerpo reutilizable de la Calculadora de 1RM (acceso directo desde el Inicio y
+ * panel dentro del módulo Herramientas). No incluye cabecera propia: la aporta la pantalla
+ * anfitriona, que también decide si desplaza el contenido.
+ */
+@Composable
+internal fun OneRepMaxPanel(modifier: Modifier = Modifier) {
+    var weightText by remember { mutableStateOf("") }
+    var repsText by remember { mutableStateOf("") }
+
+    val weight = weightText.replace(',', '.').toDoubleOrNull()
+    val reps = repsText.toIntOrNull()
+    val hasInput = weightText.isNotBlank() || repsText.isNotBlank()
+    val error = OneRepMax.validate(weight, reps)
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        LifterCard {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ToolField(
+                    value = weightText,
+                    onValueChange = { weightText = it },
+                    label = "Peso (kg)",
+                    keyboardType = KeyboardType.Decimal,
+                    modifier = Modifier.weight(1f)
+                )
+                ToolField(
+                    value = repsText,
+                    onValueChange = { repsText = it.filter(Char::isDigit) },
+                    label = "Repeticiones",
+                    keyboardType = KeyboardType.Number,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            CardCaption(
+                "Válido de 1 a ${OneRepMax.MAX_REPS} repeticiones.",
+                Modifier.padding(top = 8.dp)
+            )
+        }
+
+        if (hasInput && error != null) {
+            ErrorText(error, Modifier.fillMaxWidth().padding(top = 12.dp))
+        }
+
+        if (error == null && weight != null && reps != null) {
+            val brzycki = OneRepMax.brzycki(weight, reps)
+            val epley = OneRepMax.epley(weight, reps)
+
+            Row(
+                modifier = Modifier.padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ResultCard("BRZYCKI", brzycki, "peso × 36 ÷ (37 − reps)", Modifier.weight(1f))
+                ResultCard("EPLEY", epley, "peso × (1 + reps ÷ 30)", Modifier.weight(1f))
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF201F22))
+                    .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = "Info",
+                    tint = Color(0xFFC1C1FB),
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "Con 1 repetición, el 1RM es el mismo peso levantado. Para estimaciones con alta precisión técnica se recomienda testear entre 2 y 5 reps.",
+                    color = Color(0xFFC9C4CA),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
                 )
             }
 
-            if (hasInput && error != null) {
-                ErrorText(error, Modifier.fillMaxWidth().padding(top = 12.dp))
-            }
-
-            if (error == null && weight != null && reps != null) {
-                val brzycki = OneRepMax.brzycki(weight, reps)
-                val epley = OneRepMax.epley(weight, reps)
-
-                Row(
-                    modifier = Modifier.padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    ResultCard("BRZYCKI", brzycki, "peso × 36 ÷ (37 − reps)", Modifier.weight(1f))
-                    ResultCard("EPLEY", epley, "peso × (1 + reps ÷ 30)", Modifier.weight(1f))
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF201F22))
-                        .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = "Info",
-                        tint = Color(0xFFC1C1FB),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "Con 1 repetición, el 1RM es el mismo peso levantado. Para estimaciones con alta precisión técnica se recomienda testear entre 2 y 5 reps.",
-                        color = Color(0xFFC9C4CA),
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp
-                    )
-                }
-
-                LifterCard(Modifier.padding(top = 16.dp)) {
-                    CardCaption("ZONAS DE CARGA (BRZYCKI) · 1RM BASE ${formatOneRm(brzycki)} KG")
-                    OneRepMax.APPROACH_PERCENTS.forEach { percent ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 10.dp)
-                        ) {
-                            Text(
-                                text = "$percent%",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 14.sp,
-                                fontFamily = FontFamily.Monospace,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text(
-                                text = "${formatOneRm(brzycki * percent / 100.0)} kg",
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
+            LifterCard(Modifier.padding(top = 16.dp)) {
+                CardCaption("ZONAS DE CARGA (BRZYCKI) · 1RM BASE ${formatOneRm(brzycki)} KG")
+                OneRepMax.APPROACH_PERCENTS.forEach { percent ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
+                    ) {
+                        Text(
+                            text = "$percent%",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${formatOneRm(brzycki * percent / 100.0)} kg",
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = FontFamily.Monospace
+                        )
                     }
                 }
             }

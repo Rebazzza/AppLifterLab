@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.model.CustomExercise
@@ -64,6 +65,12 @@ import kotlinx.coroutines.withContext
 @Composable
 fun CustomExercisesPanel(
     modifier: Modifier = Modifier,
+    /**
+     * Cola al final del scroll: deja el último ejercicio por encima de la barra
+     * flotante cuando el contenedor no reserva ese espacio (p. ej. la vista Catálogos,
+     * cuyo contenido llega hasta el borde inferior de la pantalla).
+     */
+    scrollTail: Dp = 0.dp,
     authRepository: AuthRepository = remember { AuthRepository() },
     customExerciseRepository: CustomExerciseRepository = remember { CustomExerciseRepository() }
 ) {
@@ -97,7 +104,7 @@ fun CustomExercisesPanel(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
-            .padding(top = 4.dp, bottom = 24.dp)
+            .padding(top = 4.dp, bottom = 24.dp + scrollTail)
     ) {
         LifterCard {
             CardCaption("NUEVO EJERCICIO")

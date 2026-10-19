@@ -35,6 +35,7 @@ import com.example.lifterlab.ui.components.CardCaption
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.customexercises.CustomExercisesPanel
 import com.example.lifterlab.ui.features.routines.RoutineSkin
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
@@ -83,7 +84,10 @@ fun CatalogScreen(onBack: () -> Unit) {
 
             when (tab) {
                 CatalogTab.Global -> GlobalCatalogPanel(Modifier.weight(1f))
-                CatalogTab.Personalizados -> CustomExercisesPanel(Modifier.weight(1f))
+                CatalogTab.Personalizados -> CustomExercisesPanel(
+                    modifier = Modifier.weight(1f),
+                    scrollTail = bottomBarClearance()
+                )
             }
         }
     }
@@ -161,7 +165,7 @@ private fun GlobalCatalogPanel(modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
-            .padding(bottom = 104.dp)
+            .padding(bottom = bottomBarClearance())
     ) {
         LifterCard {
             CardCaption("CATÁLOGO GLOBAL · ${catalogExercises.size} EJERCICIOS")

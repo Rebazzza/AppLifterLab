@@ -2,6 +2,7 @@ package com.example.lifterlab.ui.features.tools
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +32,7 @@ import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
+import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.customexercises.CustomExercisesPanel
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.ui.features.warmup.WarmupCalculatorPanel
@@ -49,6 +51,14 @@ enum class ToolEntry(
         title = "Calculadora de Aproximación",
         description = "Progresión de series de calentamiento y tabla de intensidades (75%–95%) con discos IPF."
     ),
+    OneRepMaxCalculator(
+        title = "Calculadora de 1RM",
+        description = "Estima tu repetición máxima (Brzycki y Epley) y tu tabla de zonas de carga."
+    ),
+    PlateLoader(
+        title = "Carga de Barra IPF",
+        description = "Discos IPF por lado con colores oficiales y opción de seguros."
+    ),
     CustomExercises(
         title = "Ejercicios Personalizados",
         description = "Crea y administra tus propios ejercicios con su tipo de medición."
@@ -63,10 +73,20 @@ private sealed interface ToolsRoute {
 /**
  * Módulo Herramientas: índice de las herramientas secundarias de la app (al estilo del
  * catálogo). El listado permanece visible mientras se navega dentro de cada herramienta.
+ *
+ * @param initialTool herramienta que se abre directamente al entrar (acceso directo desde el
+ * Inicio). Si es null, el módulo arranca mostrando el índice.
  */
 @Composable
-fun ToolsScreen(onBack: () -> Unit) {
-    var route by remember { mutableStateOf<ToolsRoute>(ToolsRoute.Index) }
+fun ToolsScreen(
+    initialTool: ToolEntry? = null,
+    onBack: () -> Unit
+) {
+    var route by remember {
+        mutableStateOf<ToolsRoute>(
+            if (initialTool != null) ToolsRoute.Detail(initialTool) else ToolsRoute.Index
+        )
+    }
 
     // Botón atrás nativo: dentro de una herramienta vuelve al índice, desde el índice
     // sale del módulo hacia el Inicio.
@@ -112,7 +132,7 @@ private fun ToolsIndexPanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = 104.dp)
+                    .padding(bottom = bottomBarClearance())
             ) {
                 ToolEntry.entries.forEach { tool ->
                     LifterCard(Modifier.padding(top = 12.dp)) {
@@ -151,9 +171,9 @@ private fun ToolsIndexPanel(
 
 @Composable
 private fun ToolDetailPanel(tool: ToolEntry, onBack: () -> Unit) {
-    // Peso de barra base del perfil para la calculadora de aproximación.
-    var baseBarWeightKg by remember { mutableStateOf(20.0) }
-    if (tool == ToolEntry.WarmupCalculator) {
+    // Peso de barra base del perfil para las calculadoras que cargan barra.
+    var baseBarWeightKg by remember { mutableStateOf(PlateCalculator.BAR_KG) }
+    if (tool == ToolEntry.WarmupCalculator || tool == ToolEntry.PlateLoader) {
         val authRepository = remember { AuthRepository() }
         val profileRepository = remember { ProfileRepository() }
         val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
@@ -175,18 +195,45 @@ private fun ToolDetailPanel(tool: ToolEntry, onBack: () -> Unit) {
         // Módulo secundario (se abrió desde el índice): sí muestra botón de volver.
         RoutineTopBar(onBack = onBack)
 
-        Column(
+        ScreenTitle(
+            text = tool.title,
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .padding(top = 8.dp)
+        )
+
+        // El contenido de cada herramienta administra su propio scroll: anidar un
+        // verticalScroll dentro de otro mide el hijo con altura infinita y rompe Compose.
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .padding(bottom = 104.dp)
+                .padding(top = 8.dp)
+                .padding(bottom = bottomBarClearance())
         ) {
-            ScreenTitle(tool.title, Modifier.padding(top = 8.dp))
-
             when (tool) {
-                ToolEntry.WarmupCalculator -> WarmupCalculatorPanel(baseBarWeightKg = baseBarWeightKg)
-                ToolEntry.CustomExercises -> CustomExercisesPanel()
+                ToolEntry.WarmupCalculator -> WarmupCalculatorPanel(
+                    baseBarWeightKg = baseBarWeightKg,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                        .verticalScroll(rememberScrollState())
+                )
+                ToolEntry.OneRepMaxCalculator -> OneRepMaxPanel(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                        .verticalScroll(rememberScrollState())
+                )
+                ToolEntry.PlateLoader -> PlateLoaderPanel(
+                    barKg = baseBarWeightKg,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                        .verticalScroll(rememberScrollState())
+                )
+                // Este panel trae su propio scroll y su padding horizontal: solo
+                // necesita un alto acotado, que le da el Box que lo contiene.
+                ToolEntry.CustomExercises -> CustomExercisesPanel(Modifier.fillMaxSize())
             }
         }
     }

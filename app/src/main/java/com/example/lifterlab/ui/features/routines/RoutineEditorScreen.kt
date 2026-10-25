@@ -37,9 +37,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.model.CustomExercise
+import com.example.lifterlab.data.model.Exercise
 import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.CustomExerciseRepository
+import com.example.lifterlab.data.repository.ExerciseRepository
 import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.toast
@@ -80,6 +82,12 @@ fun RoutineEditorScreen(
     // los ejercicios propios del atleta se muestran junto al catálogo global al armar la rutina.
     var customExercises by remember { mutableStateOf<List<CustomExercise>>(emptyList()) }
 
+    // Catálogo global de /exercises (Firestore-first): alimenta la sección
+    // "Catálogo global" del selector. Carga en su propio LaunchedEffect para
+    // que una primera siembra lenta no retrase el perfil ni los ejercicios propios.
+    var globalCatalog by remember { mutableStateOf<List<Exercise>>(emptyList()) }
+    val exerciseRepository = remember { ExerciseRepository() }
+
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             val result = withContext(Dispatchers.IO) { customExerciseRepository.getCustomExercises(userId) }
@@ -90,6 +98,12 @@ fun RoutineEditorScreen(
                 if (profile.baseBarWeightKg > 0) baseBarWeightKg = profile.baseBarWeightKg
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        exerciseRepository.getCatalog()
+            .onSuccess { globalCatalog = it }
+            .onFailure { /* sin catálogo (p. ej. primera apertura offline): quedan los básicos fijos */ }
     }
 
     val volume = calculateVolume(activeRoutine)
@@ -241,6 +255,7 @@ fun RoutineEditorScreen(
     if (showAddExerciseDialog) {
         ExercisePickerDialog(
             customExercises = customExercises,
+            globalCatalog = globalCatalog,
             onSelect = { name, target ->
                 activeRoutine = addExercise(activeRoutine, name, target)
                 showAddExerciseDialog = false

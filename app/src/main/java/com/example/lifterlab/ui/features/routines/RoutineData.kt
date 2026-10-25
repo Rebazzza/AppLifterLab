@@ -7,7 +7,15 @@ import com.example.lifterlab.data.model.WorkoutSession
 import com.example.lifterlab.data.model.WarmupStep
 import java.util.Locale
 
-val catalogExercises = listOf(
+/**
+ * Ejercicios FIJOS del selector de rutinas: no dependen de la BD, así que los
+ * básicos (Sentadilla con Barra, Press de Banca, Peso Muerto…) siempre están
+ * disponibles para armar rutinas. ExerciseRepository inyecta además esos
+ * mismos nombres en `/exercises` (SBD_BASICS) para que también aparezcan en
+ * la pantalla de Catálogo con detalle y foto; el selector detecta el nombre
+ * exacto y no los duplica.
+ */
+val basicExercises = listOf(
     Pair("Sentadilla con Barra", "Objetivo: Cuádriceps, Glúteos"),
     Pair("Press de Banca", "Objetivo: Pecho, Tríceps"),
     Pair("Peso Muerto", "Objetivo: Espalda, Isquiotibiales"),

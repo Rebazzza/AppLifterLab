@@ -6,23 +6,26 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +34,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lifterlab.data.model.Exercise
+import com.example.lifterlab.data.repository.ExerciseRepository
 import com.example.lifterlab.ui.components.CardCaption
+import com.example.lifterlab.ui.components.ChippedTag
 import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
@@ -39,7 +45,9 @@ import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.customexercises.CustomExercisesPanel
 import com.example.lifterlab.ui.features.routines.RoutineSkin
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
-import com.example.lifterlab.ui.features.routines.catalogExercises
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class CatalogTab {
     Global,
@@ -56,6 +64,18 @@ enum class CatalogTab {
 @Composable
 fun CatalogScreen(onBack: () -> Unit) {
     var tab by remember { mutableStateOf(CatalogTab.Global) }
+
+    // Ruta interna del módulo: al tocar un ejercicio se abre su vista de detalle
+    // (única pantalla que descarga la demostración visual).
+    var exerciseIdSeleccionado by remember { mutableStateOf<String?>(null) }
+
+    exerciseIdSeleccionado?.let { exerciseId ->
+        ExerciseDetailScreen(
+            exerciseId = exerciseId,
+            onBack = { exerciseIdSeleccionado = null }
+        )
+        return
+    }
 
     Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -83,7 +103,10 @@ fun CatalogScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(12.dp))
 
             when (tab) {
-                CatalogTab.Global -> GlobalCatalogPanel(Modifier.weight(1f))
+                CatalogTab.Global -> GlobalCatalogPanel(
+                    modifier = Modifier.weight(1f),
+                    onExerciseClick = { exerciseId -> exerciseIdSeleccionado = exerciseId }
+                )
                 CatalogTab.Personalizados -> CustomExercisesPanel(
                     modifier = Modifier.weight(1f),
                     scrollTail = bottomBarClearance()
@@ -159,40 +182,148 @@ private fun CatalogTabItem(
 }
 
 @Composable
-private fun GlobalCatalogPanel(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-            .padding(bottom = bottomBarClearance())
+private fun GlobalCatalogPanel(
+    modifier: Modifier = Modifier,
+    onExerciseClick: (String) -> Unit
+) {
+    val repository = remember { ExerciseRepository() }
+    val scope = rememberCoroutineScope()
+
+    var exercises by remember { mutableStateOf<List<Exercise>>(emptyList()) }
+    var cargando by remember { mutableStateOf(true) }
+    var mensajeError by remember { mutableStateOf("") }
+
+    // Firestore-First: lee el catálogo cacheado (offline persistence) y solo
+    // ExerciseDB es contactado por el repository cuando la colección está vacía.
+    suspend fun recargar() {
+        cargando = true
+        val result = withContext(Dispatchers.IO) { repository.getCatalog() }
+        result
+            .onSuccess { exercises = it }
+            .onFailure { e -> mensajeError = e.message ?: "No se pudo cargar el catálogo." }
+        cargando = false
+    }
+
+    LaunchedEffect(Unit) { recargar() }
+
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            bottom = bottomBarClearance()
+        )
     ) {
-        LifterCard {
-            CardCaption("CATÁLOGO GLOBAL · ${catalogExercises.size} EJERCICIOS")
-            Text(
-                text = "Estos ejercicios están disponibles en todas las plantillas de rutina.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(top = 6.dp)
-            )
+        item {
+            LifterCard {
+                CardCaption("CATÁLOGO GLOBAL · ${exercises.size} EJERCICIOS")
+                Text(
+                    text = "Estos ejercicios están disponibles en todas las plantillas de rutina.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
         }
 
-        catalogExercises.forEach { (name, target) ->
-            LifterCard(Modifier.padding(top = 12.dp)) {
+        if (cargando) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
+        if (mensajeError.isNotEmpty()) {
+            item {
+                LifterCard(Modifier.padding(top = 12.dp)) {
+                    CardCaption("ERROR DE CONEXIÓN")
+                    Text(
+                        text = mensajeError,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                    Text(
+                        text = "Reintentar",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .padding(top = 10.dp)
+                            .clickable {
+                                mensajeError = ""
+                                scope.launch { recargar() }
+                            }
+                    )
+                }
+            }
+        }
+
+        items(exercises, key = { it.exerciseId }) { exercise ->
+            ExerciseCatalogCard(
+                exercise = exercise,
+                onClick = { onExerciseClick(exercise.exerciseId) },
+                modifier = Modifier.padding(top = 12.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Tarjeta individual del catálogo global: vista liviana SIN imágenes (la
+ * demostración visual solo se descarga en la vista de detalle del ejercicio,
+ * para no gastar ancho de banda en cada scroll). Al tocarla abre el detalle.
+ */
+@Composable
+private fun ExerciseCatalogCard(
+    exercise: Exercise,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LifterCard(
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = exercise.name,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (exercise.isSBD) {
+                        ChippedTag(
+                            text = "SBD",
+                            textColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
                 Text(
-                    text = name,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = target,
+                    text = "Objetivo: ${exercise.primaryMuscle} · ${exercise.equipment}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
+
+            Text(
+                text = "Ver detalle ›",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(start = 10.dp)
+            )
         }
     }
 }

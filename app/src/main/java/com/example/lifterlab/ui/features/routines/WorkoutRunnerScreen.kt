@@ -33,11 +33,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.model.ActiveSession
 import com.example.lifterlab.data.model.CustomExercise
+import com.example.lifterlab.data.model.Exercise
 import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.repository.ActiveSessionRepository
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.CustomExerciseRepository
+import com.example.lifterlab.data.repository.ExerciseRepository
 import com.example.lifterlab.data.repository.ProfileRepository
 import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.toast
@@ -102,6 +104,10 @@ fun WorkoutRunnerScreen(
     // ejercicios propios del atleta, reutilizables durante el Modo Gimnasio.
     var customExercises by remember { mutableStateOf<List<CustomExercise>>(emptyList()) }
 
+    // Catálogo global de /exercises para el selector (sección "Catálogo global").
+    var globalCatalog by remember { mutableStateOf<List<Exercise>>(emptyList()) }
+    val exerciseRepository = remember { ExerciseRepository() }
+
     suspend fun persistirSesion() {
         if (userId.isEmpty()) return
         activeSessionRepository.saveActiveSession(
@@ -148,6 +154,14 @@ fun WorkoutRunnerScreen(
                 }
             }
         }
+    }
+
+    // El catálogo global se carga en paralelo: una primera siembra lenta no
+    // debe demorar la restauración de la sesión ni la referencia anterior.
+    LaunchedEffect(Unit) {
+        exerciseRepository.getCatalog()
+            .onSuccess { globalCatalog = it }
+            .onFailure { /* sin catálogo: el selector conserva los básicos fijos */ }
     }
 
     LaunchedEffect(startedAt) {
@@ -320,6 +334,7 @@ fun WorkoutRunnerScreen(
     if (showAddExerciseDialog) {
         ExercisePickerDialog(
             customExercises = customExercises,
+            globalCatalog = globalCatalog,
             onSelect = { name, target ->
                 actualizarSesion { r -> addExercise(r, name, target) }
                 showAddExerciseDialog = false

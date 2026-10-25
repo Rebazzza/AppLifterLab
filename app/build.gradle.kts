@@ -43,6 +43,16 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation(libs.kotlinx.coroutines.play.services)
+
+    // ExerciseDB (RapidAPI) — red
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp.logging)
+
+    // Coil — renderizado de GIFs del catálogo en Jetpack Compose
+    implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.material)

@@ -321,23 +321,30 @@ private fun BarbellCanvas(load: PlateLoad, modifier: Modifier = Modifier) {
         val fullPlateHeight = size.height * 0.95f
         val gap = 3.dp.toPx()
 
-        // Barra: el trazo cruza todo el ancho; el disco de tope (collar interior) marca el inicio del manguito.
+        // Barra: el trazo cruza todo el ancho por detrás de los discos.
         drawRect(barColor, Offset(0f, centerY - 5.dp.toPx()), Size(size.width, 10.dp.toPx()))
-        drawRoundRect(
-            collarColor,
-            Offset(0f, centerY - 16.dp.toPx()),
-            Size(10.dp.toPx(), 32.dp.toPx()),
-            CornerRadius(3.dp.toPx())
-        )
 
-        // Con muchos discos el conjunto se comprime para caber en el ancho disponible.
-        val startX = 16.dp.toPx()
+        // Ancho natural del conjunto (manguito + discos + seguro) para centrarlo en el lienzo.
+        val collarWidth = 10.dp.toPx()
         val collarSpace = if (load.collarsTotalKg > 0) 12.dp.toPx() else 0f
-        val naturalWidth = load.perSide.sumOf { (plateWidthDp(it).dp.toPx() + gap).toDouble() }.toFloat()
-        val available = size.width - startX - collarSpace
+        val platesWidth = load.perSide.sumOf { (plateWidthDp(it).dp.toPx() + gap).toDouble() }.toFloat()
+        val naturalWidth = collarWidth + platesWidth + collarSpace
+
+        // Con muchos discos el conjunto se comprime; con pocos se queda centrado.
+        val available = size.width - 16.dp.toPx() * 2
         val scale = if (naturalWidth > available && naturalWidth > 0f) available / naturalWidth else 1f
 
-        var x = startX
+        var x = (size.width - naturalWidth * scale) / 2f
+
+        // Manguito interior (marca el inicio de la barra).
+        drawRoundRect(
+            collarColor,
+            Offset(x, centerY - 16.dp.toPx()),
+            Size(collarWidth * scale, 32.dp.toPx()),
+            CornerRadius(3.dp.toPx())
+        )
+        x += (collarWidth + gap) * scale
+
         load.perSide.forEach { plate ->
             val w = plateWidthDp(plate).dp.toPx() * scale
             val h = fullPlateHeight * plateHeightFactor(plate)

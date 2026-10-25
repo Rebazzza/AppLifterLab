@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.model.CustomExercise
+import com.example.lifterlab.data.model.Exercise
 import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.RoutineExercise
 import com.example.lifterlab.ui.theme.ColorBench
@@ -573,6 +574,7 @@ private fun sbdAccent(exerciseName: String): Color? {
 @Composable
 fun ExercisePickerDialog(
     customExercises: List<CustomExercise> = emptyList(),
+    globalCatalog: List<Exercise> = emptyList(),
     currentExerciseName: String? = null,
     onSelect: (name: String, targetMuscles: String) -> Unit,
     onDismiss: () -> Unit
@@ -703,12 +705,24 @@ fun ExercisePickerDialog(
                         it.primaryMuscle.lowercase(Locale.ROOT).contains(query)
                 }
 
-                val filteredCatalog = catalogExercises.filter { (name, target) ->
+                val filteredBasics = basicExercises.filter { (name, target) ->
                     query.isEmpty() || name.lowercase(Locale.ROOT).contains(query) ||
                         target.lowercase(Locale.ROOT).contains(query)
                 }
 
-                if (filteredCustom.isEmpty() && filteredCatalog.isEmpty()) {
+                // Catálogo global (Firestore): al final, en orden alfabético y sin
+                // repetir los básicos fijos de la sección anterior.
+                val basicNames = basicExercises.mapTo(HashSet()) { it.first.lowercase(Locale.ROOT) }
+                val filteredGlobal = globalCatalog
+                    .filter { exercise ->
+                        exercise.name.lowercase(Locale.ROOT) !in basicNames &&
+                            (query.isEmpty() ||
+                                exercise.name.lowercase(Locale.ROOT).contains(query) ||
+                                exercise.primaryMuscle.lowercase(Locale.ROOT).contains(query))
+                    }
+                    .sortedBy { it.name.lowercase(Locale.ROOT) }
+
+                if (filteredCustom.isEmpty() && filteredBasics.isEmpty() && filteredGlobal.isEmpty()) {
                     Text(
                         text = "No se encontraron ejercicios con '$searchQuery'",
                         color = Color(0xFFC9C4CA),
@@ -717,27 +731,48 @@ fun ExercisePickerDialog(
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 } else {
-                    filteredCustom.forEach { exercise ->
-                        val isCurrent = currentExerciseName != null &&
-                            exercise.name.equals(currentExerciseName, ignoreCase = true)
-                        ExerciseSheetRow(
-                            name = exercise.name,
-                            categoryTag = "Propio · ${exercise.primaryMuscle}",
-                            isCurrent = isCurrent,
-                            onClick = { onSelect(exercise.name, "Objetivo: ${exercise.primaryMuscle}") }
-                        )
+                    if (filteredCustom.isNotEmpty()) {
+                        PickerSectionLabel("Tus ejercicios")
+                        filteredCustom.forEach { exercise ->
+                            val isCurrent = currentExerciseName != null &&
+                                exercise.name.equals(currentExerciseName, ignoreCase = true)
+                            ExerciseSheetRow(
+                                name = exercise.name,
+                                categoryTag = "Propio · ${exercise.primaryMuscle}",
+                                isCurrent = isCurrent,
+                                onClick = { onSelect(exercise.name, "Objetivo: ${exercise.primaryMuscle}") }
+                            )
+                        }
                     }
 
-                    filteredCatalog.forEach { (name, target) ->
-                        val isCurrent = currentExerciseName != null &&
-                            name.equals(currentExerciseName, ignoreCase = true)
-                        val categoryTag = getCategoryTag(name, target)
-                        ExerciseSheetRow(
-                            name = name,
-                            categoryTag = categoryTag,
-                            isCurrent = isCurrent,
-                            onClick = { onSelect(name, target) }
-                        )
+                    if (filteredBasics.isNotEmpty()) {
+                        PickerSectionLabel("Básicos · SBD")
+                        filteredBasics.forEach { (name, target) ->
+                            val isCurrent = currentExerciseName != null &&
+                                name.equals(currentExerciseName, ignoreCase = true)
+                            val categoryTag = getCategoryTag(name, target)
+                            ExerciseSheetRow(
+                                name = name,
+                                categoryTag = categoryTag,
+                                isCurrent = isCurrent,
+                                onClick = { onSelect(name, target) }
+                            )
+                        }
+                    }
+
+                    if (filteredGlobal.isNotEmpty()) {
+                        PickerSectionLabel("Catálogo global")
+                        filteredGlobal.forEach { exercise ->
+                            val isCurrent = currentExerciseName != null &&
+                                exercise.name.equals(currentExerciseName, ignoreCase = true)
+                            val target = "Objetivo: ${exercise.primaryMuscle}"
+                            ExerciseSheetRow(
+                                name = exercise.name,
+                                categoryTag = getCategoryTag(exercise.name, "$target ${exercise.equipment}"),
+                                isCurrent = isCurrent,
+                                onClick = { onSelect(exercise.name, target) }
+                            )
+                        }
                     }
                 }
             }
@@ -836,6 +871,19 @@ private fun ExerciseSheetRow(
             )
         }
     }
+}
+
+/** Encabezado de sección dentro del selector (Monospace tenue). */
+@Composable
+private fun PickerSectionLabel(title: String) {
+    Text(
+        text = title,
+        color = Color(0xFF52525B),
+        fontSize = 10.sp,
+        fontFamily = FontFamily.Monospace,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)
+    )
 }
 
 private fun getCategoryTag(name: String, target: String): String {

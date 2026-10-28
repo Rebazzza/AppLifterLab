@@ -154,6 +154,16 @@ fun ErrorText(message: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun SuccessText(message: String, modifier: Modifier = Modifier) {
+    Text(
+        text = message,
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.tertiary,
+        fontSize = 14.sp
+    )
+}
+
+@Composable
 fun LifterCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = modifier
@@ -201,10 +211,12 @@ fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     minHeight: androidx.compose.ui.unit.Dp = 48.dp
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = minHeight),

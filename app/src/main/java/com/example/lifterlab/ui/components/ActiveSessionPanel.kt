@@ -1,4 +1,4 @@
-package com.example.lifterlab.ui.components
+﻿package com.example.lifterlab.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,7 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.ActiveSessionTracker
+import com.example.lifterlab.data.RestTimerState
+import com.example.lifterlab.data.WorkoutViewState
 import com.example.lifterlab.data.model.ActiveSession
 import com.example.lifterlab.data.repository.ActiveSessionRepository
 import com.example.lifterlab.ui.theme.NavBarSurface
@@ -44,15 +46,16 @@ import com.example.lifterlab.ui.theme.PrimaryAccent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 /**
  * Panel flotante de la sesión de entrenamiento en curso.
  *
  * Se monta una sola vez desde MainActivity, APILADO ENCIMA de la barra de navegación
- * flotante, y se ve en cualquier pantalla mientras haya una rutina iniciada. El
- * cronómetro que muestra corre segundo a segundo desde que arrancó la sesión y el
- * panel desaparece en cuanto la sesión se termina o se limpia (el repositorio
- * actualiza [ActiveSessionTracker] en esos momentos). Tocarlo regresa a la sesión.
+ * flotante, y se ve en cualquier pantalla mientras haya una rutina iniciada, EXCEPTO
+ * dentro de la propia vista del entrenamiento (donde el cronómetro ya está en la barra
+ * superior). El cronómetro que muestra es el del DESCANSO: la cuenta atrás del
+ * temporizador de descanso en vivo. Tocarlo regresa a la sesión.
  */
 @Composable
 fun ActiveSessionPanel(
@@ -77,23 +80,40 @@ fun ActiveSessionPanel(
 
     val sesion = ActiveSessionTracker.sesion ?: return
 
-    var ahora by remember(sesion.startedAtMillis) { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(sesion.startedAtMillis) {
-        while (true) {
-            delay(1000)
-            ahora = System.currentTimeMillis()
+    // Dentro de la vista del entrenamiento el panel no se muestra: el cronómetro de la
+    // sesión ya vive en la barra superior del runner.
+    if (WorkoutViewState.isInWorkoutRunner) return
+
+    // El panel solo refresca mientras el descanso esté corriendo; fuera de él se mantiene
+    // estático mostrando "00:00".
+    var tic by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(RestTimerState.isRunning, RestTimerState.targetTimeMillis) {
+        while (RestTimerState.isRunning && RestTimerState.targetTimeMillis > 0L) {
+            val diff = RestTimerState.targetTimeMillis - System.currentTimeMillis()
+            if (diff <= 0) {
+                RestTimerState.clear()
+                break
+            }
+            tic = System.currentTimeMillis()
+            delay(500)
         }
     }
 
-    val transcurrido = ((ahora - sesion.startedAtMillis) / 1000L).coerceAtLeast(0L)
-    val tiempo = String.format(
-        java.util.Locale.ROOT,
-        "%02d:%02d:%02d",
-        transcurrido / 3600,
-        (transcurrido % 3600) / 60,
-        transcurrido % 60
-    )
+    val enDescanso = RestTimerState.isRunning && RestTimerState.remainingSeconds() > 0
+    // `tic` participa como clave de recomposición: leerlo aquí hace que el panel repinte
+    // el conteo cada 500 ms mientras el descanso corre (el estado del reloj no cambia).
+    @Suppress("UNUSED_VARIABLE")
+    val tickActual = tic
+    val remaining = if (enDescanso) RestTimerState.remainingSeconds() else 0
+    val tiempo = String.format(Locale.ROOT, "%02d:%02d", remaining / 60, remaining % 60)
     val nombreRutina = if (sesion.isFreeSession) "Rutina Express" else sesion.routineName
+    val titulo = if (enDescanso && RestTimerState.exerciseName.isNotBlank()) {
+        "DESCANSO \u2022 ${RestTimerState.exerciseName}"
+    } else if (enDescanso) {
+        "DESCANSO"
+    } else {
+        "ENTRENAMIENTO EN CURSO"
+    }
 
     val forma = RoundedCornerShape(18.dp)
     Surface(
@@ -136,7 +156,7 @@ fun ActiveSessionPanel(
                     .padding(start = 10.dp)
             ) {
                 Text(
-                    text = "ENTRENAMIENTO EN CURSO",
+                    text = titulo,
                     color = NavIconInactive,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Medium,

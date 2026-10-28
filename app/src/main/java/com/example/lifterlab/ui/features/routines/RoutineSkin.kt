@@ -352,6 +352,7 @@ fun SteelOutlineButton(
 @Composable
 fun RoutineTopBar(
     onBack: (() -> Unit)? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -389,6 +390,8 @@ fun RoutineTopBar(
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp
             )
+            Spacer(Modifier.weight(1f))
+            trailingContent?.invoke()
         }
         Box(
             Modifier

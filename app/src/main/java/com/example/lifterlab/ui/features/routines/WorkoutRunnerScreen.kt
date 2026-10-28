@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,6 +39,8 @@ import com.example.lifterlab.data.model.CustomExercise
 import com.example.lifterlab.data.model.Exercise
 import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.Routine
+import com.example.lifterlab.data.RestTimerState
+import com.example.lifterlab.data.WorkoutViewState
 import com.example.lifterlab.data.repository.ActiveSessionRepository
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.CustomExerciseRepository
@@ -88,10 +91,13 @@ fun WorkoutRunnerScreen(
     // marcadas y el inicio del cronómetro estén presentes ANTES de pintar la lista.
     // Si la sesión llegara en caliente, cada fila recordaría en memoria el estado
     // vacío y las marcas hechas parecerían borradas al salir y volver a entrar.
-    val sesionGuardada = remember(routine, isExpress) {
-        val guardada = activeSessionRepository.peekActiveSession()
-        if (guardada != null && guardada.matchesRoutine(routine, isExpress)) guardada else null
-    }
+    val sesionExistente = remember(routine, isExpress) { activeSessionRepository.peekActiveSession() }
+    val sesionGuardada = sesionExistente?.takeIf { it.matchesRoutine(routine, isExpress) }
+
+    // Hay otra rutina en progreso (distinta de esta): antes de arrancar hay que avisar
+    // para no descartar en silencio el avance del entrenamiento que ya estaba en curso.
+    val sesionEnConflicto = sesionExistente?.takeIf { !it.matchesRoutine(routine, isExpress) }
+    var avisoRutinaEnCurso by remember { mutableStateOf(sesionEnConflicto != null) }
 
     // Restauración de la sesión en curso: ejercicios (con sus series marcadas) y punto
     // de arranque del cronómetro, todo presente desde el primer pintado.
@@ -128,35 +134,47 @@ fun WorkoutRunnerScreen(
     var globalCatalog by remember { mutableStateOf<List<Exercise>>(emptyList()) }
     val exerciseRepository = remember { ExerciseRepository() }
 
-    // Temporizador de descanso en vivo (HU-12, RNF04 / RNF11)
-    var timerTargetTimeMillis by remember { mutableStateOf<Long?>(null) }
-    var timerExerciseName by remember { mutableStateOf("") }
-    var timerRemainingSeconds by remember { mutableIntStateOf(0) }
-    var isTimerRunning by remember { mutableStateOf(false) }
+    // Temporizador de descanso en vivo (HU-12, RNF04 / RNF11).
+    //
+    // El estado vive en [RestTimerState] (global) para que el panel flotante pueda
+    // mostrar la misma cuenta atrás aunque el atleta salga de esta vista. Aquí solo se
+    // observa y se refleja en el widget.
+    var timerRemainingSeconds by remember { mutableIntStateOf(RestTimerState.remainingSeconds()) }
+    var restRunning by remember { mutableStateOf(RestTimerState.isRunning) }
+    var restExerciseName by remember { mutableStateOf(RestTimerState.exerciseName) }
 
     // Inicializar canal de notificaciones para descanso
     LaunchedEffect(Unit) {
         RestTimerNotifier.createNotificationChannel(context)
     }
 
-    // Corrutina de cuenta regresiva resistente a pausas en segundo plano
-    LaunchedEffect(timerTargetTimeMillis, isTimerRunning) {
-        if (isTimerRunning && timerTargetTimeMillis != null) {
-            while (isTimerRunning) {
-                val now = System.currentTimeMillis()
-                val diff = timerTargetTimeMillis!! - now
-                val secs = (diff / 1000L).toInt()
+    // Mientras el atleta está en la vista del entrenamiento, el panel flotante se oculta.
+    DisposableEffect(Unit) {
+        WorkoutViewState.enter()
+        onDispose { WorkoutViewState.leave() }
+    }
+
+    // Corrutina de cuenta regresiva resistente a pausas en segundo plano. Refleja el
+    // estado global y avisa cuando el descanso termina.
+    LaunchedEffect(RestTimerState.isRunning, RestTimerState.targetTimeMillis) {
+        restRunning = RestTimerState.isRunning
+        restExerciseName = RestTimerState.exerciseName
+        if (RestTimerState.isRunning) {
+            while (RestTimerState.isRunning) {
+                val secs = RestTimerState.remainingSeconds()
                 if (secs <= 0) {
+                    val name = RestTimerState.exerciseName
+                    RestTimerState.clear()
                     timerRemainingSeconds = 0
-                    isTimerRunning = false
-                    timerTargetTimeMillis = null
-                    RestTimerNotifier.notifyRestFinished(context, timerExerciseName)
+                    restRunning = false
+                    RestTimerNotifier.notifyRestFinished(context, name)
                     break
-                } else {
-                    timerRemainingSeconds = secs
                 }
+                timerRemainingSeconds = secs
                 delay(500)
             }
+        } else {
+            timerRemainingSeconds = 0
         }
     }
 
@@ -181,7 +199,9 @@ fun WorkoutRunnerScreen(
     LaunchedEffect(userId) {
         // Si no había sesión guardada para esta rutina, esta apertura es la que crea la
         // sesión activa (la que sostiene el panel flotante mientras el atleta entrena).
-        if (sesionGuardada == null) persistirSesion()
+        // Si hay OTRA rutina en progreso, se espera a que el atleta resuelva el aviso:
+        // no se debe descartar su avance actual hasta que lo confirme.
+        if (sesionGuardada == null && sesionEnConflicto == null) persistirSesion()
 
         if (userId.isNotEmpty()) {
             // RF25 — Un único historial alimenta la referencia de la sesión anterior y los
@@ -242,7 +262,18 @@ fun WorkoutRunnerScreen(
     Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            RoutineTopBar(onBack = onBack)
+            RoutineTopBar(
+                onBack = onBack,
+                trailingContent = {
+                    Text(
+                        text = formatElapsed(duracionSegs),
+                        color = RoutineSkin.Tertiary,
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            )
 
             Column(
                 modifier = Modifier
@@ -263,74 +294,33 @@ fun WorkoutRunnerScreen(
                     lineHeight = 32.sp
                 )
 
-                Text(
-                    text = if (isExpress)
-                        "Modo libre: agrega ejercicios y al terminar solo se guardan los datos de la sesión."
-                    else
-                        "",
-                    color = RoutineSkin.OnSurfaceVariant,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-
-                Text(
-                    text = "$completedSets ${if (completedSets == 1) "serie completada" else "series completadas"} • ${formatElapsed(duracionSegs)}",
-                    color = RoutineSkin.Tertiary,
-                    fontSize = 13.sp,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-
-                if (sesionReanudada) {
-                    SteelCard(Modifier.padding(top = 12.dp)) {
-                        MonoLabel("Sesión en curso guardada en el dispositivo", color = RoutineSkin.PrimaryText)
-                        Text(
-                            text = "Retomaste el entrenamiento donde lo dejaste.",
-                            color = RoutineSkin.OnSurfaceVariant,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
-                        )
-                        SteelOutlineButton(
-                            text = "Descartar y empezar de cero",
-                            contentColor = RoutineSkin.OnSurfaceVariant,
-                            onClick = {
-                                scope.launch {
-                                    // El repositorio ya hace su trabajo en IO: no hace falta
-                                    // envolverlo, así el espejo de la sesión (y el panel
-                                    // flotante) se actualiza en el hilo principal.
-                                    activeSessionRepository.clearActiveSession()
-                                    activeRoutine = routine
-                                    startedAt = System.currentTimeMillis()
-                                    sesionReanudada = false
-                                    persistirSesion()
-                                    context.toast("Sesión anterior descartada")
-                                }
-                            }
-                        )
-                    }
+                if (!isExpress) {
+                    Text(
+                        text = "",
+                        color = RoutineSkin.OnSurfaceVariant,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
 
-                if (isTimerRunning || timerRemainingSeconds > 0) {
+                if (completedSets > 0) {
+                    Text(
+                        text = "$completedSets ${if (completedSets == 1) "serie completada" else "series completadas"}",
+                        color = RoutineSkin.Tertiary,
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                if (restRunning || timerRemainingSeconds > 0) {
                     RestTimerWidget(
                         remainingSeconds = timerRemainingSeconds,
-                        exerciseName = timerExerciseName,
-                        onAdjustTime = { delta ->
-                            val newSecs = (timerRemainingSeconds + delta).coerceAtLeast(0)
-                            if (newSecs == 0) {
-                                isTimerRunning = false
-                                timerTargetTimeMillis = null
-                                timerRemainingSeconds = 0
-                            } else {
-                                timerRemainingSeconds = newSecs
-                                timerTargetTimeMillis = System.currentTimeMillis() + (newSecs * 1000L)
-                                if (!isTimerRunning) isTimerRunning = true
-                            }
-                        },
-                        onSkipRest = {
-                            isTimerRunning = false
-                            timerTargetTimeMillis = null
-                            timerRemainingSeconds = 0
-                        },
+                        exerciseName = restExerciseName,
+                        onAdjustTime = { delta -> RestTimerState.adjust(delta) },
+                        onSkipRest = { RestTimerState.skip() },
                         modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                     )
                 }
@@ -354,11 +344,7 @@ fun WorkoutRunnerScreen(
                                     val wasCompleted = setAct?.isCompleted == true
                                     if (!wasCompleted) {
                                         // Inicia el temporizador de descanso automáticamente al completar la serie (105s = 1:45)
-                                        val defaultRest = 105
-                                        timerExerciseName = exercise.name
-                                        timerRemainingSeconds = defaultRest
-                                        timerTargetTimeMillis = System.currentTimeMillis() + (defaultRest * 1000L)
-                                        isTimerRunning = true
+                                        RestTimerState.start(exercise.name, 105)
                                     }
                                 }
                                 actualizarSesion { r -> updateSetData(r, exIndex, setIndex, weightKg, reps, rpe, isCompleted) }
@@ -510,6 +496,40 @@ fun WorkoutRunnerScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showFinishDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // Aviso de rutina en curso: al intentar arrancar una rutina distinta mientras otra
+    // sigue en progreso, se ofrece cancelar o descartar la anterior y empezar esta.
+    if (avisoRutinaEnCurso) {
+        val nombreEnCurso = sesionEnConflicto?.let {
+            if (it.isFreeSession) "Rutina Express" else it.routineName
+        } ?: "otra rutina"
+        AlertDialog(
+            onDismissRequest = { /* decisión obligatoria: cancelar o descartar */ },
+            title = { Text("Rutina en curso") },
+            text = {
+                Text(
+                    "Tienes \"$nombreEnCurso\" en progreso. Si inicias esta rutina se " +
+                        "descartará el avance de la anterior y no quedará en tu historial. " +
+                        "¿Deseas continuar?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    avisoRutinaEnCurso = false
+                    scope.launch {
+                        activeSessionRepository.clearActiveSession()
+                        persistirSesion()
+                    }
+                }) { Text("Iniciar y descartar", color = RoutineSkin.Error) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    avisoRutinaEnCurso = false
+                    onBack()
+                }) { Text("Cancelar") }
             }
         )
     }

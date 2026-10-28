@@ -4,6 +4,7 @@ import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.RoutineExercise
 import com.example.lifterlab.data.model.WorkoutSession
 import com.example.lifterlab.ui.features.history.buildEditedSession
+import com.example.lifterlab.ui.features.routines.formatRestTimerSeconds
 import com.example.lifterlab.ui.features.tools.IpfPlate
 import com.example.lifterlab.ui.features.tools.OneRepMax
 import com.example.lifterlab.ui.features.tools.PlateCalculator
@@ -91,5 +92,13 @@ class StrengthToolsTest {
         )
         assertTrue(buildEditedSession(WorkoutSession(id = "s1"), bad).isFailure)
         assertTrue(buildEditedSession(WorkoutSession(id = "s1"), emptyList()).isFailure)
+    }
+
+    @Test
+    fun restTimer_formatter() {
+        assertEquals("01:45", formatRestTimerSeconds(105))
+        assertEquals("00:00", formatRestTimerSeconds(0))
+        assertEquals("00:00", formatRestTimerSeconds(-5))
+        assertEquals("02:30", formatRestTimerSeconds(150))
     }
 }

@@ -1,7 +1,6 @@
 package com.example.lifterlab.ui.features.auth
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +31,7 @@ import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.LifterTextField
 import com.example.lifterlab.ui.components.PrimaryButton
 import com.example.lifterlab.ui.components.SecondaryButton
+import com.example.lifterlab.ui.components.SuccessText
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.toast
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +49,7 @@ fun LoginScreen(
     var mensajeError by remember { mutableStateOf("") }
     var mensajecorreo by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(false) }
+    var enviandoCorreo by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -81,9 +82,7 @@ fun LoginScreen(
                         onValueChange = { correo = it },
                         label = "tucorreo@example.com",
                         keyboardType = KeyboardType.Email
-
                     )
-
 
                     Spacer(Modifier.height(16.dp))
                     LifterTextField(
@@ -98,12 +97,18 @@ fun LoginScreen(
                         ErrorText(mensajeError, Modifier.fillMaxWidth())
                     }
 
+                    if (mensajecorreo.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        SuccessText(mensajecorreo, Modifier.fillMaxWidth())
+                    }
+
                     Spacer(Modifier.height(24.dp))
                     PrimaryButton(
                         text = if (cargando) "Ingresando..." else "Iniciar Sesión",
                         onClick = {
                             cargando = true
                             mensajeError = ""
+                            mensajecorreo = ""
                             postLogin(
                                 correo = correo,
                                 password = password,
@@ -121,13 +126,37 @@ fun LoginScreen(
                                 }
                             )
                         },
-                        enabled = !cargando
+                        enabled = !cargando && !enviandoCorreo
                     )
 
                     Spacer(Modifier.height(8.dp))
                     SecondaryButton(
-                        text = "¿Olvidaste tu contraseña?",
-                        onClick = { context.toast("Pronto podrás recuperar tu contraseña") }
+                        text = if (enviandoCorreo) "Enviando..." else "Renovar contraseña",
+                        enabled = !cargando && !enviandoCorreo,
+                        onClick = {
+                            if (correo.isBlank()) {
+                                mensajeError = "Ingresa tu correo electrónico arriba para enviarte el enlace de recuperación."
+                                mensajecorreo = ""
+                            } else {
+                                mensajeError = ""
+                                mensajecorreo = ""
+                                enviandoCorreo = true
+                                scope.launch {
+                                    val result = withContext(Dispatchers.IO) {
+                                        authRepository.sendPasswordResetEmail(correo)
+                                    }
+                                    enviandoCorreo = false
+                                    result
+                                        .onSuccess {
+                                            mensajecorreo = "Correo enviado. Revisa tu bandeja de entrada."
+                                            context.toast("Correo enviado")
+                                        }
+                                        .onFailure { e ->
+                                            mensajeError = e.message ?: "Error al enviar el correo de recuperación."
+                                        }
+                                }
+                            }
+                        }
                     )
                 }
 

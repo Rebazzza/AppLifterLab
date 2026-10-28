@@ -3,6 +3,10 @@
 
     <!-- Consumo de la API externa ExerciseDB (RapidAPI) y carga de demostraciones remotas (fotos/GIF). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Vibración háptica al terminar el tiempo de descanso (RNF11). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Notificaciones locales para el temporizador de descanso en segundo plano (RNF04). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="false"

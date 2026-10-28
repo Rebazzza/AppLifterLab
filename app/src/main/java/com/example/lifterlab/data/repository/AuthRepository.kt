@@ -45,4 +45,17 @@ class AuthRepository(
     fun signOut() {
         auth.signOut()
     }
+
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            val trimmed = email.trim()
+            if (trimmed.isEmpty()) {
+                throw IllegalArgumentException("Ingresa tu correo electrónico para restablecer la contraseña.")
+            }
+            auth.sendPasswordResetEmail(trimmed).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

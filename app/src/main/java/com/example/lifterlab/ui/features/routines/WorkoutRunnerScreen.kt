@@ -19,6 +19,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -107,6 +108,38 @@ fun WorkoutRunnerScreen(
     // Catálogo global de /exercises para el selector (sección "Catálogo global").
     var globalCatalog by remember { mutableStateOf<List<Exercise>>(emptyList()) }
     val exerciseRepository = remember { ExerciseRepository() }
+
+    // Temporizador de descanso en vivo (HU-12, RNF04 / RNF11)
+    var timerTargetTimeMillis by remember { mutableStateOf<Long?>(null) }
+    var timerExerciseName by remember { mutableStateOf("") }
+    var timerRemainingSeconds by remember { mutableIntStateOf(0) }
+    var isTimerRunning by remember { mutableStateOf(false) }
+
+    // Inicializar canal de notificaciones para descanso
+    LaunchedEffect(Unit) {
+        RestTimerNotifier.createNotificationChannel(context)
+    }
+
+    // Corrutina de cuenta regresiva resistente a pausas en segundo plano
+    LaunchedEffect(timerTargetTimeMillis, isTimerRunning) {
+        if (isTimerRunning && timerTargetTimeMillis != null) {
+            while (isTimerRunning) {
+                val now = System.currentTimeMillis()
+                val diff = timerTargetTimeMillis!! - now
+                val secs = (diff / 1000L).toInt()
+                if (secs <= 0) {
+                    timerRemainingSeconds = 0
+                    isTimerRunning = false
+                    timerTargetTimeMillis = null
+                    RestTimerNotifier.notifyRestFinished(context, timerExerciseName)
+                    break
+                } else {
+                    timerRemainingSeconds = secs
+                }
+                delay(500)
+            }
+        }
+    }
 
     suspend fun persistirSesion() {
         if (userId.isEmpty()) return
@@ -255,6 +288,31 @@ fun WorkoutRunnerScreen(
                     }
                 }
 
+                if (isTimerRunning || timerRemainingSeconds > 0) {
+                    RestTimerWidget(
+                        remainingSeconds = timerRemainingSeconds,
+                        exerciseName = timerExerciseName,
+                        onAdjustTime = { delta ->
+                            val newSecs = (timerRemainingSeconds + delta).coerceAtLeast(0)
+                            if (newSecs == 0) {
+                                isTimerRunning = false
+                                timerTargetTimeMillis = null
+                                timerRemainingSeconds = 0
+                            } else {
+                                timerRemainingSeconds = newSecs
+                                timerTargetTimeMillis = System.currentTimeMillis() + (newSecs * 1000L)
+                                if (!isTimerRunning) isTimerRunning = true
+                            }
+                        },
+                        onSkipRest = {
+                            isTimerRunning = false
+                            timerTargetTimeMillis = null
+                            timerRemainingSeconds = 0
+                        },
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    )
+                }
+
                 activeRoutine.exercises.forEachIndexed { exIndex, exercise ->
                     ReorderableExerciseItem(dragState, exIndex) {
                         ExerciseCard(
@@ -268,6 +326,18 @@ fun WorkoutRunnerScreen(
                             onMoveUp = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex - 1) } },
                             onMoveDown = { actualizarSesion { r -> moveExercise(r, exIndex, exIndex + 1) } },
                             onUpdateSet = { setIndex, weightKg, reps, rpe, isCompleted ->
+                                if (isCompleted == true) {
+                                    val setAct = exercise.sets.getOrNull(setIndex)
+                                    val wasCompleted = setAct?.isCompleted == true
+                                    if (!wasCompleted) {
+                                        // Inicia el temporizador de descanso automáticamente al completar la serie (105s = 1:45)
+                                        val defaultRest = 105
+                                        timerExerciseName = exercise.name
+                                        timerRemainingSeconds = defaultRest
+                                        timerTargetTimeMillis = System.currentTimeMillis() + (defaultRest * 1000L)
+                                        isTimerRunning = true
+                                    }
+                                }
                                 actualizarSesion { r -> updateSetData(r, exIndex, setIndex, weightKg, reps, rpe, isCompleted) }
                             },
                             onAddSet = {

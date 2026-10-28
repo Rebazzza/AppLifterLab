@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -895,4 +896,136 @@ private fun getCategoryTag(name: String, target: String): String {
         lower.contains("dominadas") || lower.contains("fondos") || targetLower.contains("calistenia") -> "Calistenia"
         else -> "Accesorio"
     }
+}
+
+/**
+ * HU-12 (RNF04 / RNF11) — Widget del Temporizador de Descanso ("Rest Timer")
+ * Siguiendo el maquetado exacto de Ejemplo.html ("Titanio y Acero"):
+ * - Encabezado con título REST TIMER e ícono de temporizador.
+ * - Botones circulares de ajuste rápido -30 y +30 con display numérico MM:SS en acento primario.
+ * - Botón "Skip Rest" / "Saltar Descanso" para omitir o cerrar el temporizador activo.
+ */
+@Composable
+fun RestTimerWidget(
+    remainingSeconds: Int,
+    exerciseName: String = "",
+    onAdjustTime: (secondsDelta: Int) -> Unit,
+    onSkipRest: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(12.dp)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .routineGlow(shape, RoutineSkin.PrimaryText, 8.dp)
+            .clip(shape)
+            .background(Color(0xFF141417))
+            .border(1.dp, Color(0xFF242427), shape)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Cabecera del Timer
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (exerciseName.isNotBlank()) "REST TIMER • $exerciseName" else "REST TIMER",
+                color = RoutineSkin.OnSurfaceVariant,
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
+            )
+            Icon(
+                imageVector = Icons.Filled.Timer,
+                contentDescription = "Temporizador",
+                tint = RoutineSkin.Tertiary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        // Display de tiempo y botones -30 / +30
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Botón -30s
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(RoutineSkin.SurfaceContainer)
+                    .border(1.dp, RoutineSkin.OutlineVariant, CircleShape)
+                    .clickable { onAdjustTime(-30) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "-30",
+                    color = RoutineSkin.OnSurfaceVariant,
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Display de tiempo MM:SS
+            Text(
+                text = formatRestTimerSeconds(remainingSeconds),
+                color = RoutineSkin.PrimaryText,
+                fontSize = 44.sp,
+                fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = (-1).sp
+            )
+
+            // Botón +30s
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(RoutineSkin.SurfaceContainer)
+                    .border(1.dp, RoutineSkin.OutlineVariant, CircleShape)
+                    .clickable { onAdjustTime(+30) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "+30",
+                    color = RoutineSkin.OnSurfaceVariant,
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // Botón Skip Rest
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(RoutineSkin.SurfaceContainer)
+                .border(1.dp, RoutineSkin.OutlineVariant, RoundedCornerShape(8.dp))
+                .clickable { onSkipRest() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Skip Rest",
+                color = RoutineSkin.OnSurface,
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+fun formatRestTimerSeconds(seconds: Int): String {
+    val total = seconds.coerceAtLeast(0)
+    val mins = total / 60
+    val secs = total % 60
+    return String.format(Locale.ROOT, "%02d:%02d", mins, secs)
 }

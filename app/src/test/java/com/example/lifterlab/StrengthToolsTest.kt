@@ -6,16 +6,13 @@ import com.example.lifterlab.data.model.RoutineExercise
 import com.example.lifterlab.data.model.WorkoutSession
 import com.example.lifterlab.ui.features.catalog.buildExerciseHistory
 import com.example.lifterlab.ui.features.history.buildEditedSession
-<<<<<<< HEAD
 import com.example.lifterlab.ui.features.routines.buildWorkoutSession
+import com.example.lifterlab.ui.features.routines.formatRestTimerSeconds
 import com.example.lifterlab.ui.features.routines.MovimientoBasico
 import com.example.lifterlab.ui.features.routines.marcasHistoricas
 import com.example.lifterlab.ui.features.routines.mejoresPesosPorMovimiento
 import com.example.lifterlab.ui.features.routines.movimientoBasicoDe
 import com.example.lifterlab.ui.features.routines.normalizeRpe
-=======
-import com.example.lifterlab.ui.features.routines.formatRestTimerSeconds
->>>>>>> e5450248619abb3d252085665faf1290bb2681f4
 import com.example.lifterlab.ui.features.tools.IpfPlate
 import com.example.lifterlab.ui.features.tools.OneRepMax
 import com.example.lifterlab.ui.features.tools.PlateCalculator
@@ -137,7 +134,6 @@ class StrengthToolsTest {
     }
 
     @Test
-<<<<<<< HEAD
     fun rpe_isNormalizedToHalfPointScale() {
         assertEquals(0.0, normalizeRpe(0.0), 1e-9)
         assertEquals(6.0, normalizeRpe(3.0), 1e-9)
@@ -327,12 +323,13 @@ class StrengthToolsTest {
         assertEquals(180.0, marcas.getValue(MovimientoBasico.SENTADILLA), 1e-9)
         // Sin registros del movimiento, no aparece en el mapa.
         assertNull(marcas[MovimientoBasico.PESO_MUERTO])
-=======
+    }
+
+    @Test
     fun restTimer_formatter() {
         assertEquals("01:45", formatRestTimerSeconds(105))
         assertEquals("00:00", formatRestTimerSeconds(0))
         assertEquals("00:00", formatRestTimerSeconds(-5))
         assertEquals("02:30", formatRestTimerSeconds(150))
->>>>>>> e5450248619abb3d252085665faf1290bb2681f4
     }
 }

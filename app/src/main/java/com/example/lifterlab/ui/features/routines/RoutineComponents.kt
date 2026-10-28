@@ -32,11 +32,8 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
-<<<<<<< HEAD
 import androidx.compose.material.icons.filled.Star
-=======
 import androidx.compose.material.icons.filled.Timer
->>>>>>> e5450248619abb3d252085665faf1290bb2681f4
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem

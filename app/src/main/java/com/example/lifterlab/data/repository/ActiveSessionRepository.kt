@@ -1,6 +1,7 @@
 package com.example.lifterlab.data.repository
 
 import android.content.Context
+import com.example.lifterlab.data.ActiveSessionTracker
 import com.example.lifterlab.data.model.ActiveSession
 import com.example.lifterlab.data.model.ExerciseSet
 import com.example.lifterlab.data.model.RoutineExercise
@@ -40,10 +41,32 @@ class ActiveSessionRepository(context: Context) {
     }
 
     /**
+     * Lectura síncrona de la sesión activa (el JSON ya vive en memoria en
+     * SharedPreferences, es una operación muy ligera).
+     *
+     * Sirve para tener la sesión disponible en la PRIMERA composición de la vista de
+     * entrenamiento: si la sesión llegara en caliente, cada fila de serie guardaría en
+     * memoria el estado vacío y las series ya hechas parecerían borradas al salir y
+     * volver. Para el resto de los casos, usar [getActiveSession].
+     */
+    fun peekActiveSession(): ActiveSession? {
+        return try {
+            val raw = prefs.getString(KEY_ACTIVE_SESSION, null)
+            if (raw.isNullOrBlank()) null else activeSessionFromJson(raw)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
      * Guarda (o sobrescribe) la sesión activa en curso.
+     *
+     * El espejo [ActiveSessionTracker] se actualiza FUERA del hilo de fondo y en el
+     * contexto del llamador (la vista), para que el panel flotante se pinte u oculte en
+     * el mismo frame en que la sesión se guarda o se limpia.
      */
     suspend fun saveActiveSession(session: ActiveSession): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        val guardado = withContext(Dispatchers.IO) {
             try {
                 prefs.edit().putString(KEY_ACTIVE_SESSION, activeSessionToJson(session).toString()).apply()
                 Result.success(Unit)
@@ -51,13 +74,15 @@ class ActiveSessionRepository(context: Context) {
                 Result.failure(e)
             }
         }
+        if (guardado.isSuccess) ActiveSessionTracker.actualizar(session)
+        return guardado
     }
 
     /**
      * Elimina la sesión activa local (al terminar o descartar el entrenamiento).
      */
     suspend fun clearActiveSession(): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        val limpiado = withContext(Dispatchers.IO) {
             try {
                 prefs.edit().remove(KEY_ACTIVE_SESSION).apply()
                 Result.success(Unit)
@@ -65,6 +90,8 @@ class ActiveSessionRepository(context: Context) {
                 Result.failure(e)
             }
         }
+        if (limpiado.isSuccess) ActiveSessionTracker.actualizar(null)
+        return limpiado
     }
 
     private fun activeSessionToJson(session: ActiveSession): JSONObject {
@@ -81,6 +108,7 @@ class ActiveSessionRepository(context: Context) {
                         .put("est1RM", set.est1RM)
                         .put("isPR", set.isPR)
                         .put("isCompleted", set.isCompleted)
+                        .put("isWarmup", set.isWarmup)
                 )
             }
             exercisesJson.put(
@@ -120,7 +148,8 @@ class ActiveSessionRepository(context: Context) {
                         rpe = setJson.optDouble("rpe", 0.0),
                         est1RM = setJson.optDouble("est1RM", 0.0),
                         isPR = setJson.optBoolean("isPR", false),
-                        isCompleted = setJson.optBoolean("isCompleted", false)
+                        isCompleted = setJson.optBoolean("isCompleted", false),
+                        isWarmup = setJson.optBoolean("isWarmup", false)
                     )
                 )
             }

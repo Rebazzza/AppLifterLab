@@ -212,7 +212,8 @@ private fun SessionRow(session: WorkoutSession, onClick: () -> Unit) {
         )
         Text(
             text = "${formatVolumeKg(session.totalVolumeKg)} • ${session.exercises.size} ejercicios • " +
-                "${session.exercises.sumOf { it.sets.size }} series • ${session.durationMins} min",
+                "${session.exercises.sumOf { ex -> ex.sets.count { it.isCompleted } }} series • " +
+                "${session.durationMins} min",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp,
             fontFamily = FontFamily.Monospace,
@@ -285,7 +286,7 @@ internal fun SessionEditor(
                 modifier = Modifier.padding(top = 4.dp)
             )
             ScreenSubtitle(
-                "Corrige peso, repeticiones y RPE. Una serie desmarcada se descarta al guardar.",
+                "Corrige peso, repeticiones y RPE. Una serie desmarcada se guarda como omitida.",
                 Modifier.padding(top = 8.dp)
             )
 

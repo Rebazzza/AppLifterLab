@@ -216,6 +216,10 @@ private fun ExerciseDetailContent(exercise: Exercise) {
         )
     }
 
+    // RF29 — historial analítico del movimiento: curva de 1RM, récords y tonelaje.
+    Spacer(Modifier.height(12.dp))
+    ExerciseHistorySection(exerciseName = exercise.name)
+
     if (exercise.instructions.isNotEmpty()) {
         Spacer(Modifier.height(12.dp))
         LifterCard {

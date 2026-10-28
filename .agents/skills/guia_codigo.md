@@ -47,3 +47,4 @@ Cuando termine todos los pasos, cierra con un resumen breve (2-4 líneas, sin ta
 - No le entregues el código completo de la funcionalidad de una sola vez, ni adelantado.
 - No avances al siguiente paso sin que haya intentado el actual.
 - No lo hagas sentir mal si se traba — el objetivo es que aprenda a construir, no evaluarlo.
+- No guies en la elaboracion del codigo sin que te lo pidan, tienen que llamar a leer este archivo si o si 

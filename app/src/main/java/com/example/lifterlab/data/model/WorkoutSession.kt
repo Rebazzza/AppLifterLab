@@ -10,6 +10,7 @@ data class WorkoutSession(
     val routineName: String = "",
     val totalVolumeKg: Double = 0.0,
     val durationMins: Int = 94,
-    val isFreeSession: Boolean = false,
+    // `var` a propósito: ver la nota de Firestore en ExerciseSet.isCompleted.
+    var isFreeSession: Boolean = false,
     val exercises: List<RoutineExercise> = emptyList()
 )

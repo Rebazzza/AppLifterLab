@@ -13,7 +13,6 @@ data class UserProfile(
     val squatGoalKg: Double = 200.0,
     val benchGoalKg: Double = 130.0,
     val deadliftGoalKg: Double = 235.0,
-    val streakDays: Int = 4,
     val currentCycleWeek: Int = 4,
     val cyclePhase: String = "PICO"
 )

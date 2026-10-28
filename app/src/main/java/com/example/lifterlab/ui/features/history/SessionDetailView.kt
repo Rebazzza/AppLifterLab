@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.model.ExerciseSet
@@ -94,7 +96,10 @@ fun SessionDetailView(
     onEdit: () -> Unit
 ) {
     val ejercicios = session.exercises.sortedBy { it.executionOrder }
-    val totalSeries = ejercicios.sumOf { it.sets.size }
+
+    // RF04/RF29 — el resumen cuenta lo ejecutado: las series omitidas quedan en el
+    // registro (para saber qué se saltó) pero no suman ni series ni tonelaje.
+    val totalSeries = ejercicios.sumOf { ex -> ex.sets.count { it.isCompleted } }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -165,13 +170,23 @@ fun SessionDetailView(
 @Composable
 private fun SessionExerciseCard(numero: Int, exercise: RoutineExercise) {
     val sets = exercise.sets
-    val volumen = sets.sumOf { it.weightKg * it.reps }
+    val ejecutadas = sets.count { it.isCompleted }
+    val volumen = sets.filter { it.isCompleted }.sumOf { it.weightKg * it.reps }
     val mejor1rm = sets.maxOfOrNull { it.est1RM } ?: 0.0
+    val hayRecord = sets.any { it.isPR }
 
     LifterCard(Modifier.padding(top = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CardTitle("$numero. ${exercise.name}", Modifier.weight(1f))
-            ChippedTag("${sets.size} ${if (sets.size == 1) "SERIE" else "SERIES"}")
+            ChippedTag("$ejecutadas/${sets.size} ${if (sets.size == 1) "SERIE" else "SERIES"}")
+        }
+        if (hayRecord) {
+            Row(Modifier.padding(top = 6.dp)) {
+                ChippedTag(
+                    "RÉCORD PERSONAL",
+                    textColor = MaterialTheme.colorScheme.tertiary
+                )
+            }
         }
         CardCaption(
             exercise.targetMuscles.ifEmpty { "Objetivo: General" },
@@ -195,9 +210,14 @@ private fun SessionExerciseCard(numero: Int, exercise: RoutineExercise) {
     }
 }
 
-/** Fila de una serie en el detalle: número, peso × repeticiones y esfuerzo percibido. */
+/**
+ * Fila de una serie en el detalle: número, peso × repeticiones, esfuerzo percibido (RF05)
+ * y sello de Récord Personal (RF29). Una serie omitida (isCompleted = false) se muestra
+ * atenuada y tachada: queda en el registro, pero no cuenta como ejecutada.
+ */
 @Composable
 private fun SetDetailRow(set: ExerciseSet, mostrarDivisor: Boolean) {
+    val omitida = !set.isCompleted
     Column(Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -206,7 +226,7 @@ private fun SetDetailRow(set: ExerciseSet, mostrarDivisor: Boolean) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "SERIE ${set.setNumber}",
+                text = if (omitida) "SERIE ${set.setNumber} · OMITIDA" else "SERIE ${set.setNumber}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
@@ -214,11 +234,16 @@ private fun SetDetailRow(set: ExerciseSet, mostrarDivisor: Boolean) {
             )
             Text(
                 text = "${formatKg(set.weightKg)} KG × ${set.reps}",
-                color = MaterialTheme.colorScheme.onBackground,
+                color = if (omitida) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onBackground
+                },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = FontFamily.Monospace,
                 textAlign = TextAlign.End,
+                textDecoration = if (omitida) TextDecoration.LineThrough else null,
                 modifier = Modifier.weight(2.2f)
             )
             Text(
@@ -233,6 +258,19 @@ private fun SetDetailRow(set: ExerciseSet, mostrarDivisor: Boolean) {
                 textAlign = TextAlign.End,
                 modifier = Modifier.weight(1.2f)
             )
+            Box(Modifier.width(26.dp)) {
+                if (set.isPR) {
+                    Text(
+                        text = "PR",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
         if (mostrarDivisor) {
             Box(

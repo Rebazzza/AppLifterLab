@@ -56,6 +56,8 @@ import com.example.lifterlab.ui.formatKg
 import com.example.lifterlab.ui.formatSessionDate
 import com.example.lifterlab.ui.formatVolumeKg
 import com.example.lifterlab.ui.progressFraction
+import com.example.lifterlab.ui.CONSISTENCY_HISTORY_LIMIT
+import com.example.lifterlab.ui.buildWeeklyConsistency
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -85,6 +87,8 @@ fun ProfileViewScreen(
     var cargando by remember { mutableStateOf(true) }
     var sesiones by remember { mutableStateOf<List<WorkoutSession>>(emptyList()) }
     var historialCargando by remember { mutableStateOf(true) }
+    // Racha medida en semanas con al menos una sesión terminada.
+    var rachaSemanas by remember { mutableStateOf(0) }
     // Sesion abierta desde el historial: su detalle se muestra en modo solo lectura.
     var sesionSeleccionada by remember { mutableStateOf<WorkoutSession?>(null) }
 
@@ -98,6 +102,15 @@ fun ProfileViewScreen(
             .onFailure { historialCargando = false }
     }
 
+    suspend fun recargarRacha() {
+        if (userId.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            warmupRepository.getSessionDates(userId, CONSISTENCY_HISTORY_LIMIT)
+        }.onSuccess { fechas ->
+            rachaSemanas = buildWeeklyConsistency(fechas).streakWeeks
+        }
+    }
+
     LaunchedEffect(userId) {
         if (userId.isEmpty()) {
             cargando = false
@@ -108,6 +121,7 @@ fun ProfileViewScreen(
             .onSuccess { cargando = false; perfil = it }
             .onFailure { cargando = false }
 
+        recargarRacha()
         recargarHistorial()
     }
 
@@ -125,7 +139,10 @@ fun ProfileViewScreen(
             onBack = { sesionSeleccionada = null },
             onChanged = {
                 sesionSeleccionada = null
-                scope.launch { recargarHistorial() }
+                scope.launch {
+                    recargarRacha()
+                    recargarHistorial()
+                }
             }
         )
         return
@@ -176,7 +193,12 @@ fun ProfileViewScreen(
                             modifier = Modifier.padding(top = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            ChippedTag("${current.streakDays} DÍAS DE RACHA")
+                            ChippedTag(
+                                when (rachaSemanas) {
+                                    1 -> "1 SEMANA DE RACHA"
+                                    else -> "$rachaSemanas SEMANAS DE RACHA"
+                                }
+                            )
                             ChippedTag("CICLO ${current.currentCycleWeek} - ${current.cyclePhase}")
                         }
                     }

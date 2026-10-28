@@ -43,7 +43,6 @@ class FirestoreSeeder(
                 squatGoalKg = 200.0,
                 benchGoalKg = 130.0,
                 deadliftGoalKg = 235.0,
-                streakDays = 4,
                 currentCycleWeek = 4,
                 cyclePhase = "PICO"
             )

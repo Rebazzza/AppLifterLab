@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,6 +80,12 @@ import kotlin.math.abs
 fun ExerciseCard(
     exercise: RoutineExercise,
     reference: List<ExerciseSet> = emptyList(),
+    /**
+     * RF25 — Récords históricos por nombre de ejercicio. Solo el Modo Gimnasio los
+     * recibe: con ellos, una serie completada que supere la marca enciende la fila
+     * amarilla de Récord Personal.
+     */
+    records: Map<String, MarcaDeEjercicio> = emptyMap(),
     gymMode: Boolean = false,
     isDragging: Boolean = false,
     dragHandleModifier: Modifier = Modifier,
@@ -171,6 +179,9 @@ fun ExerciseCard(
             // La primera serie sin completar se resalta como la serie activa.
             val activeIndex = exercise.sets.indexOfFirst { !it.isCompleted }
 
+            // RF25 — Récord histórico del movimiento (si el ejercicio ya tiene historial).
+            val marca = records[exercise.name]
+
             exercise.sets.forEachIndexed { setIndex, set ->
                 SetRow(
                     setIndex = setIndex,
@@ -178,6 +189,9 @@ fun ExerciseCard(
                     reference = reference.getOrNull(setIndex),
                     gymMode = gymMode,
                     isActive = gymMode && setIndex == activeIndex,
+                    // RF25: fila amarilla mientras la serie esté completada y supere el
+                    // récord; al desmarcarla deja de ser récord y el color se apaga.
+                    isRecord = gymMode && esRecordPersonal(set, marca),
                     alternate = setIndex % 2 == 0,
                     onUpdate = onUpdateSet
                 )
@@ -239,6 +253,8 @@ fun SetRow(
     reference: ExerciseSet? = null,
     gymMode: Boolean = false,
     isActive: Boolean = false,
+    /** RF25 — la serie completada supera el récord histórico: la fila se pinta amarilla. */
+    isRecord: Boolean = false,
     alternate: Boolean = false,
     onUpdate: (Int, Double?, Int?, Double?, Boolean?) -> Unit
 ) {
@@ -247,7 +263,29 @@ fun SetRow(
     var rpeText by remember { mutableStateOf(if (set.rpe > 0) formatKg(set.rpe) else "") }
     var completed by remember { mutableStateOf(set.isCompleted) }
 
+    // La fila adopta lo que venga de fuera (sesión restaurada al abrir, sesión
+    // descartada, reordenamiento): sin esto, cada fila conservaría en memoria lo que
+    // vio al componerse y las series hechas parecerían borradas. Solo se reescribe el
+    // texto cuando el valor del modelo difiere del escrito, para no pisar lo que el
+    // atleta está tipeando en ese momento.
+    LaunchedEffect(set.isCompleted) { completed = set.isCompleted }
+    LaunchedEffect(set.weightKg) {
+        val actual = kgText.toDoubleOrNull()
+        if (actual != null && actual != set.weightKg) kgText = formatKg(set.weightKg)
+    }
+    LaunchedEffect(set.reps) {
+        val actual = repsText.toIntOrNull()
+        if (actual != null && actual != set.reps) repsText = set.reps.toString()
+    }
+    LaunchedEffect(set.rpe) {
+        val actual = rpeText.toDoubleOrNull()
+        if (actual != null && actual != set.rpe) rpeText = formatKg(set.rpe)
+    }
+
+    // RF25 — El récord manda sobre el rayado alterno y sobre la fila activa (una serie
+    // récord siempre está completada, así que nunca es la "siguiente por hacer").
     val background = when {
+        isRecord -> RoutineSkin.RecordYellowContainer
         isActive -> RoutineSkin.SurfaceContainerLow
         alternate -> RoutineSkin.RowAlt
         else -> Color.Transparent
@@ -258,8 +296,12 @@ fun SetRow(
             .fillMaxWidth()
             .background(background)
             .drawBehind {
-                if (isActive) {
-                    drawRect(
+                when {
+                    isRecord -> drawRect(
+                        color = RoutineSkin.RecordYellow,
+                        size = Size(4.dp.toPx(), size.height)
+                    )
+                    isActive -> drawRect(
                         color = RoutineSkin.Primary,
                         size = Size(4.dp.toPx(), size.height)
                     )
@@ -267,14 +309,24 @@ fun SetRow(
             }
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
-        if (reference != null && (reference.weightKg > 0 || reference.reps > 0)) {
-            Text(
-                text = "Última vez: ${formatKg(reference.weightKg)} kg × ${reference.reps}",
-                color = RoutineSkin.OnSurfaceVariant.copy(alpha = 0.7f),
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(start = 2.dp)
-            )
+        val ref = reference?.takeIf { it.weightKg > 0 || it.reps > 0 }
+        if (ref != null || isRecord) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (ref != null) {
+                    Text(
+                        text = "Última vez: ${formatKg(ref.weightKg)} kg × ${ref.reps}",
+                        color = RoutineSkin.OnSurfaceVariant.copy(alpha = 0.7f),
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 2.dp)
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
+                if (isRecord) PersonalRecordBadge()
+            }
             Spacer(Modifier.height(6.dp))
         }
 
@@ -355,6 +407,38 @@ fun SetRow(
                 )
             }
         }
+    }
+}
+
+/**
+ * RF25 — Distintivo "PR" (Personal Record): chip amarillo con estrella que aparece en la
+ * fila de la serie cuando el peso o el tonelaje superan la marca histórica del movimiento.
+ */
+@Composable
+private fun PersonalRecordBadge() {
+    val shape = RoundedCornerShape(4.dp)
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(RoutineSkin.RecordYellow)
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = RoutineSkin.OnRecordYellow,
+            modifier = Modifier.size(10.dp)
+        )
+        Spacer(Modifier.size(3.dp))
+        Text(
+            text = "PR",
+            color = RoutineSkin.OnRecordYellow,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 0.5.sp
+        )
     }
 }
 

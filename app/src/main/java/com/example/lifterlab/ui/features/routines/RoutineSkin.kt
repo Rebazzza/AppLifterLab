@@ -76,6 +76,12 @@ object RoutineSkin {
     val OnSurfaceVariant = Color(0xFFC7C4D7)
     val Error = Color(0xFFFFB4AB)
     val RowAlt = Color(0x14FFFFFF)
+
+    // RF25 — Indicador visual de Récord Personal: amarillo de disco IPF 15 kg, con
+    // relleno translúcido para teñir la fila sin perder legibilidad sobre el tema oscuro.
+    val RecordYellow = Color(0xFFFFD54F)
+    val RecordYellowContainer = Color(0x40FFD54F)
+    val OnRecordYellow = Color(0xFF1A1A0B)
 }
 
 /** Halo suave del Ejemplo.html (`box-shadow: 0 0 15px`). */

@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
@@ -41,6 +42,7 @@ import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.CustomExerciseRepository
 import com.example.lifterlab.data.repository.ExerciseRepository
 import com.example.lifterlab.data.repository.ProfileRepository
+import com.example.lifterlab.data.repository.RoutineRepository
 import com.example.lifterlab.data.repository.WarmupRepository
 import com.example.lifterlab.toast
 import com.example.lifterlab.ui.components.bottomBarClearance
@@ -49,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Modo Gimnasio: registro de series, peso y repeticiones.
@@ -70,6 +73,7 @@ fun WorkoutRunnerScreen(
     onFinished: () -> Unit,
     authRepository: AuthRepository = remember { AuthRepository() },
     warmupRepository: WarmupRepository = remember { WarmupRepository() },
+    routineRepository: RoutineRepository = remember { RoutineRepository() },
     context: android.content.Context = LocalContext.current
 ) {
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
@@ -78,28 +82,43 @@ fun WorkoutRunnerScreen(
     val profileRepository = remember { ProfileRepository() }
     val scope = rememberCoroutineScope()
 
-    var activeRoutine by remember { mutableStateOf(routine) }
+    // Sesión guardada en el dispositivo: se lee de forma SÍNCRONA en la primera
+    // composición (es un JSON chico que ya vive en memoria) para que las series ya
+    // marcadas y el inicio del cronómetro estén presentes ANTES de pintar la lista.
+    // Si la sesión llegara en caliente, cada fila recordaría en memoria el estado
+    // vacío y las marcas hechas parecerían borradas al salir y volver a entrar.
+    val sesionGuardada = remember(routine, isExpress) {
+        val guardada = activeSessionRepository.peekActiveSession()
+        if (guardada != null && guardada.matchesRoutine(routine, isExpress)) guardada else null
+    }
+
+    // Restauración de la sesión en curso: ejercicios (con sus series marcadas) y punto
+    // de arranque del cronómetro, todo presente desde el primer pintado.
+    var activeRoutine by remember {
+        mutableStateOf(sesionGuardada?.let { routine.copy(exercises = it.exercises) } ?: routine)
+    }
     var mensajeError by remember { mutableStateOf("") }
     var guardando by remember { mutableStateOf(false) }
     var showAddExerciseDialog by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
-
-    // True en cuanto el atleta registra algo (serie, reorder, ejercicio). Evita que la
-    // carga de la sesión guardada (asíncrona) sobrescriba esos cambios y "devuelva" los
-    // ejercicios al lugar de antes.
-    var usuarioInteractuo by remember { mutableStateOf(false) }
+    var showCancelDialog by remember { mutableStateOf(false) }
 
     // Calculadora de Aproximación: peso de la barra base desde el perfil.
     var showWarmupCalculator by remember { mutableStateOf(false) }
     var baseBarWeightKg by remember { mutableStateOf(20.0) }
 
-    // Sesión activa en curso: estado local del dispositivo.
-    var startedAt by remember { mutableStateOf(System.currentTimeMillis()) }
-    var sesionReanudada by remember { mutableStateOf(false) }
+    // Sesión activa en curso: el cronómetro arranca en el instante en que se inicia la
+    // rutina y, si se retoma una sesión guardada, continúa desde donde iba.
+    var startedAt by remember { mutableStateOf(sesionGuardada?.startedAtMillis ?: System.currentTimeMillis()) }
+    var sesionReanudada by remember { mutableStateOf(sesionGuardada != null) }
     var ahora by remember { mutableStateOf(System.currentTimeMillis()) }
 
     // Referencia de la sesión anterior para las tarjetas de series.
     var referenciaPrevia by remember { mutableStateOf<Map<String, List<ExerciseSet>>>(emptyMap()) }
+
+    // RF25 — Récords históricos por nombre de ejercicio. Encienden la fila amarilla de
+    // Récord Personal en el Modo Gimnasio en cuanto una serie completada los supera.
+    var marcasRecord by remember { mutableStateOf<Map<String, MarcaDeEjercicio>>(emptyMap()) }
 
     // ejercicios propios del atleta, reutilizables durante el Modo Gimnasio.
     var customExercises by remember { mutableStateOf<List<CustomExercise>>(emptyList()) }
@@ -122,15 +141,27 @@ fun WorkoutRunnerScreen(
     }
 
     fun actualizarSesion(cambio: (Routine) -> Routine) {
-        usuarioInteractuo = true
         activeRoutine = cambio(activeRoutine)
         scope.launch { persistirSesion() }
     }
 
     LaunchedEffect(userId) {
+        // Si no había sesión guardada para esta rutina, esta apertura es la que crea la
+        // sesión activa (la que sostiene el panel flotante mientras el atleta entrena).
+        if (sesionGuardada == null) persistirSesion()
+
         if (userId.isNotEmpty()) {
-            val referencia = withContext(Dispatchers.IO) { warmupRepository.getWorkoutSessions(userId, 5) }
-            referencia.onSuccess { sesiones -> referenciaPrevia = previousSessionReference(sesiones) }
+            // RF25 — Un único historial alimenta la referencia de la sesión anterior y los
+            // récords en vivo. Se pide el mismo volumen que al cerrar la sesión (RF29) para
+            // que la fila amarilla del Modo Gimnasio coincida con lo que quedará guardado.
+            // Lectura opcional y no bloqueante: sin historial simplemente no hay marcas.
+            val referencia = withContext(Dispatchers.IO) {
+                warmupRepository.getWorkoutSessions(userId, SESIONES_PARA_RECORDS)
+            }
+            referencia.onSuccess { sesiones ->
+                referenciaPrevia = previousSessionReference(sesiones)
+                marcasRecord = marcasHistoricas(sesiones)
+            }
 
             val propios = withContext(Dispatchers.IO) { customExerciseRepository.getCustomExercises(userId) }
             propios.onSuccess { customExercises = it }
@@ -138,20 +169,6 @@ fun WorkoutRunnerScreen(
             val perfil = withContext(Dispatchers.IO) { profileRepository.getProfile(userId) }
             perfil.onSuccess { profile ->
                 if (profile.baseBarWeightKg > 0) baseBarWeightKg = profile.baseBarWeightKg
-            }
-
-            val guardada = withContext(Dispatchers.IO) { activeSessionRepository.getActiveSession() }
-            guardada.onSuccess { saved ->
-                // Si el atleta ya reordenó o registró series mientras cargaba la
-                // sesión guardada, no se sobrescribe lo que hizo.
-                if (usuarioInteractuo) return@onSuccess
-                if (saved != null && saved.matchesRoutine(routine, isExpress)) {
-                    activeRoutine = activeRoutine.copy(exercises = saved.exercises)
-                    startedAt = saved.startedAtMillis
-                    sesionReanudada = true
-                } else {
-                    persistirSesion()
-                }
             }
         }
     }
@@ -164,16 +181,19 @@ fun WorkoutRunnerScreen(
             .onFailure { /* sin catálogo: el selector conserva los básicos fijos */ }
     }
 
+    // El reloj de la sesión avanza segundo a segundo: es lo que hace que el cronómetro
+    // de la vista (y el del panel flotante) se vea corriendo mientras se entrena.
     LaunchedEffect(startedAt) {
         while (true) {
-            delay(30000)
+            delay(1000)
             ahora = System.currentTimeMillis()
         }
     }
 
     val volumenCompletado = calculateCompletedVolume(activeRoutine)
     val completedSets = activeRoutine.exercises.sumOf { ex -> ex.sets.count { it.isCompleted } }
-    val duracionMins = ((ahora - startedAt) / 60000L).toInt().coerceAtLeast(0)
+    val duracionSegs = ((ahora - startedAt) / 1000L).toInt().coerceAtLeast(0)
+    val duracionMins = duracionSegs / 60
 
     // Reordenar en vivo el orden de ejecución de los ejercicios de la sesión.
     val dragState = rememberExerciseDragState { fromIndex, toIndex ->
@@ -221,7 +241,7 @@ fun WorkoutRunnerScreen(
                 )
 
                 Text(
-                    text = "$completedSets ${if (completedSets == 1) "serie completada" else "series completadas"} • ${formatElapsed(duracionMins)}",
+                    text = "$completedSets ${if (completedSets == 1) "serie completada" else "series completadas"} • ${formatElapsed(duracionSegs)}",
                     color = RoutineSkin.Tertiary,
                     fontSize = 13.sp,
                     fontFamily = FontFamily.Monospace,
@@ -242,8 +262,10 @@ fun WorkoutRunnerScreen(
                             contentColor = RoutineSkin.OnSurfaceVariant,
                             onClick = {
                                 scope.launch {
-                                    withContext(Dispatchers.IO) { activeSessionRepository.clearActiveSession() }
-                                    usuarioInteractuo = true
+                                    // El repositorio ya hace su trabajo en IO: no hace falta
+                                    // envolverlo, así el espejo de la sesión (y el panel
+                                    // flotante) se actualiza en el hilo principal.
+                                    activeSessionRepository.clearActiveSession()
                                     activeRoutine = routine
                                     startedAt = System.currentTimeMillis()
                                     sesionReanudada = false
@@ -260,6 +282,7 @@ fun WorkoutRunnerScreen(
                         ExerciseCard(
                             exercise = exercise,
                             reference = referenciaPrevia[exercise.name].orEmpty(),
+                            records = marcasRecord,
                             gymMode = true,
                             isDragging = dragState.isDragging(exIndex),
                             dragHandleModifier = Modifier.dragHandleFor(dragState, exIndex),
@@ -318,6 +341,17 @@ fun WorkoutRunnerScreen(
                 }
 
                 Spacer(Modifier.height(28.dp))
+
+                // Cancelar: cierra la ventana, borra la sesión activa (y con ella el
+                // panel flotante) y NO escribe nada en el historial.
+                SteelOutlineButton(
+                    text = "Cancelar Rutina",
+                    contentColor = RoutineSkin.Error,
+                    leadingIcon = Icons.Filled.Close,
+                    onClick = { if (!guardando) showCancelDialog = true }
+                )
+
+                Spacer(Modifier.height(12.dp))
                 AccentWideButton(
                     text = if (guardando) "Guardando..." else "Finalizar Entrenamiento",
                     onClick = { showFinishDialog = true },
@@ -369,7 +403,7 @@ fun WorkoutRunnerScreen(
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "$completedSets series • $volumenCompletado • ${formatElapsed(duracionMins)}",
+                        text = "$completedSets series • $volumenCompletado • ${formatElapsed(duracionSegs)}",
                         color = RoutineSkin.Tertiary,
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace
@@ -384,12 +418,14 @@ fun WorkoutRunnerScreen(
                     terminarSesion(
                         userId = userId,
                         routine = activeRoutine,
+                        plantilla = routine,
                         isExpress = isExpress,
                         durationMins = duracionMins.coerceAtLeast(1),
                         scope = scope,
                         context = context,
                         warmupRepository = warmupRepository,
                         activeSessionRepository = activeSessionRepository,
+                        routineRepository = routineRepository,
                         onError = { msg ->
                             guardando = false
                             mensajeError = msg
@@ -407,6 +443,38 @@ fun WorkoutRunnerScreen(
             }
         )
     }
+
+    // Cancelar la rutina: cierra la ventana, borra la sesión activa (y con ella el panel
+    // flotante) sin escribir nada en el historial.
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelDialog = false },
+            title = { Text("Cancelar Rutina") },
+            text = {
+                Text(
+                    "Se cerrará el entrenamiento y se descartará todo lo hecho en esta sesión: " +
+                        "nada se guardará en tu historial."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCancelDialog = false
+                    guardando = true
+                    mensajeError = ""
+                    scope.launch {
+                        // Solo se limpia la sesión activa; no se consolida la sesión.
+                        activeSessionRepository.clearActiveSession()
+                        guardando = false
+                        context.toast("Rutina cancelada")
+                        onFinished()
+                    }
+                }) { Text("Sí, cancelar", color = RoutineSkin.Error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelDialog = false }) { Text("Seguir entrenando") }
+            }
+        )
+    }
 }
 
 private fun ActiveSession.matchesRoutine(routine: Routine, isExpress: Boolean): Boolean {
@@ -414,19 +482,22 @@ private fun ActiveSession.matchesRoutine(routine: Routine, isExpress: Boolean): 
     return if (routineId.isNotEmpty()) routineId == routine.id else routineName == routine.name
 }
 
-private fun formatElapsed(mins: Int): String {
-    return String.format(java.util.Locale.ROOT, "%02d:%02d", mins / 60, mins % 60)
+/** Tiempo transcurrido de la sesión en HH:MM:SS (el reloj avanza segundo a segundo). */
+private fun formatElapsed(segs: Int): String {
+    return String.format(java.util.Locale.ROOT, "%02d:%02d:%02d", segs / 3600, (segs % 3600) / 60, segs % 60)
 }
 
 private fun terminarSesion(
     userId: String,
     routine: Routine,
+    plantilla: Routine,
     isExpress: Boolean,
     durationMins: Int,
     scope: kotlinx.coroutines.CoroutineScope,
     context: android.content.Context,
     warmupRepository: WarmupRepository,
     activeSessionRepository: ActiveSessionRepository,
+    routineRepository: RoutineRepository,
     onError: (String) -> Unit,
     onSuccess: (String) -> Unit
 ) {
@@ -439,17 +510,42 @@ private fun terminarSesion(
         onError("No hay una sesión iniciada.")
         return
     }
-    val session = buildWorkoutSession(routine, isExpress, durationMins)
     scope.launch {
-        val result = withContext(Dispatchers.IO) { warmupRepository.saveWorkoutSession(userId, session) }
+        // RF29 — récords: se leen los máximos históricos del usuario ANTES de guardar
+        // para poder marcar automáticamente las series que los superan. RNF03: esta
+        // lectura es opcional y acotada, para que una red lenta jamás retrase el guardado
+        // del entrenamiento (sin historial simplemente no se marcan récords).
+        val previas = withTimeoutOrNull(8_000) {
+            withContext(Dispatchers.IO) {
+                warmupRepository.getWorkoutSessions(userId, SESIONES_PARA_RECORDS)
+            }
+        }?.getOrElse { emptyList() } ?: emptyList()
+        val sesion = buildWorkoutSession(routine, isExpress, durationMins, marcasHistoricas(previas))
+
+        val result = withContext(Dispatchers.IO) { warmupRepository.saveWorkoutSession(userId, sesion) }
         result
             .onSuccess {
-                withContext(Dispatchers.IO) { activeSessionRepository.clearActiveSession() }
-                onSuccess(formatVolumeText(session.totalVolumeKg))
+                activeSessionRepository.clearActiveSession()
+
+                // Refleja en la plantilla los pesos y repeticiones usados en la sesión, de
+                // modo que la próxima vez que se arranque la rutina aparezcan esas cargas
+                // (120 kg en lugar de los 100 kg con los que fue creada). Solo aplica a
+                // rutinas guardadas (no a Express) y como mejor esfuerzo: un fallo aquí
+                // no invalida el entrenamiento ya consolidado en el historial.
+                if (!isExpress && plantilla.id.isNotEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        routineRepository.saveRoutine(userId, applySessionValues(plantilla, routine))
+                    }
+                }
+
+                onSuccess(formatVolumeText(sesion.totalVolumeKg))
             }
             .onFailure { e -> onError(e.message ?: "No se pudo guardar la sesión.") }
     }
 }
+
+/** Sesiones del historial que se leen para decidir si una serie es Récord Personal. */
+private const val SESIONES_PARA_RECORDS = 200
 
 private fun formatVolumeText(volumeKg: Double): String {
     return if (volumeKg >= 1000) {

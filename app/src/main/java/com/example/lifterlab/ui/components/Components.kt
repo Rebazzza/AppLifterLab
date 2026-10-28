@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lifterlab.data.ActiveSessionTracker
 import com.example.lifterlab.ui.theme.NavBarSurface
 import com.example.lifterlab.ui.theme.NavIconActive
 import com.example.lifterlab.ui.theme.NavIconInactive
@@ -67,10 +68,17 @@ val FieldCornerRadius = 12.dp
  * quede tapado por la barra de navegación flotante (que se monta encima del contenido
  * desde MainActivity): la altura real del menú (inset de navegación + ~90 dp) más un
  * margen de 104 dp.
+ *
+ * Si hay un entrenamiento en curso, el panel flotante de la sesión se apila encima del
+ * menú: se reserva además su altura para que el último contenido con scroll tampoco
+ * quede tapado por ese panel.
  */
 @Composable
-fun bottomBarClearance(): Dp =
-    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 104.dp
+fun bottomBarClearance(): Dp {
+    val extraSesionActiva = if (ActiveSessionTracker.sesion != null) 76.dp else 0.dp
+    return WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+        104.dp + extraSesionActiva
+}
 
 /** Pestañas de la barra de navegación global. */
 enum class LifterTab {

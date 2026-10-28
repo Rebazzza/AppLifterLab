@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lifterlab.data.model.ActiveSession
 import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.RoutineRepository
@@ -63,14 +64,57 @@ private sealed interface RoutinesRoute {
     object Catalog : RoutinesRoute
 }
 
+/**
+ * Reconstruye la rutina que se estaba entrenando a partir de la sesión activa, para
+ * que el módulo pueda abrirse directo en la pantalla del entrenamiento en curso.
+ * Al pintarse, el runner confirma contra la sesión local guardada, que es la que trae
+ * las series ya marcadas y el inicio real del cronómetro.
+ */
+private fun ActiveSession.comoRoutine(): Routine = Routine(
+    id = routineId,
+    name = routineName.ifBlank { "Rutina Express" },
+    exercises = exercises
+)
+
+/**
+ * Contenedor del módulo Rutinas.
+ *
+ * [sesionActiva] (panel flotante global) hace que el módulo arranque directo en la
+ * pantalla del entrenamiento en curso en lugar del listado.
+ *
+ * [rutinaParaIniciar] e [iniciarExpress] permiten el acceso rápido desde el Inicio:
+ * el módulo arranca directamente en el entrenamiento elegido. Se consumen una sola
+ * vez y luego [onArranqueConsumido] limpia el pedido para que volver a Rutinas desde
+ * la barra inferior no repita el arranque.
+ */
 @Composable
 fun RoutinesScreen(
     onBack: () -> Unit,
+    sesionActiva: ActiveSession? = null,
+    rutinaParaIniciar: Routine? = null,
+    iniciarExpress: Boolean = false,
+    onArranqueConsumido: () -> Unit = {},
     authRepository: AuthRepository = remember { AuthRepository() },
     routineRepository: RoutineRepository = remember { RoutineRepository() },
     warmupRepository: WarmupRepository = remember { WarmupRepository() }
 ) {
-    var route by remember { mutableStateOf<RoutinesRoute>(RoutinesRoute.List) }
+    var route by remember {
+        mutableStateOf<RoutinesRoute>(
+            when {
+                sesionActiva != null ->
+                    RoutinesRoute.Runner(sesionActiva.comoRoutine(), isExpress = sesionActiva.isFreeSession)
+                rutinaParaIniciar != null ->
+                    RoutinesRoute.Runner(rutinaParaIniciar, isExpress = false)
+                iniciarExpress ->
+                    RoutinesRoute.Runner(Routine(name = "Rutina Express"), isExpress = true)
+                else -> RoutinesRoute.List
+            }
+        )
+    }
+
+    // El pedido de arranque directo ya quedó capturado en [route]: se limpia para
+    // que una nueva visita al módulo empiece en el listado.
+    LaunchedEffect(Unit) { onArranqueConsumido() }
 
     // Boton atras nativo dentro del modulo: vuelve al listado y, desde el
     // listado, sale del modulo hacia el Inicio.
@@ -102,7 +146,8 @@ fun RoutinesScreen(
             onBack = { route = RoutinesRoute.List },
             onFinished = { route = RoutinesRoute.List },
             authRepository = authRepository,
-            warmupRepository = warmupRepository
+            warmupRepository = warmupRepository,
+            routineRepository = routineRepository
         )
         RoutinesRoute.Catalog -> CatalogScreen(
             onBack = { route = RoutinesRoute.List }

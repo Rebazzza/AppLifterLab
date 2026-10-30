@@ -101,6 +101,7 @@ fun DashboardScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToOneRepMax: () -> Unit,
     onNavigateToPlateLoader: () -> Unit,
+    onNavigateToCompetition: () -> Unit,
     onNavigateToTool: (ToolEntry) -> Unit,
     onStartRoutine: (Routine) -> Unit,
     onStartExpress: () -> Unit,
@@ -290,6 +291,8 @@ fun DashboardScreen(
                 onStartRoutine = onStartRoutine,
                 onStartExpress = onStartExpress
             )
+
+CompetitionCard(onNavigateToCompetition)
 
             ToolsCard(
                 onNavigateToOneRepMax = onNavigateToOneRepMax,
@@ -541,6 +544,24 @@ private fun LastSessionCard(
         SecondaryButton(
             text = "VER REGISTRO \u2192",
             onClick = { onNavigateToHistory() },
+            minHeight = 46.dp
+        )
+    }
+}
+
+@Composable
+private fun CompetitionCard(onNavigateToCompetition: () -> Unit) {
+    LifterCard(Modifier.padding(top = 16.dp)) {
+        CardTitle("Competencia")
+        Text(
+            text = "Planifica y registra tus 3 intentos de Sentadilla, Banca y Peso Muerto, y obtén tu total SBD y puntaje DOTS.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
+        )
+        SecondaryButton(
+            text = "ABRIR MÓDULO DE COMPETENCIA →",
+            onClick = onNavigateToCompetition,
             minHeight = 46.dp
         )
     }

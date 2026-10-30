@@ -23,6 +23,7 @@ import com.example.lifterlab.ui.components.LifterBottomNavBar
 import com.example.lifterlab.ui.components.LifterTab
 import com.example.lifterlab.ui.features.auth.LoginScreen
 import com.example.lifterlab.ui.features.auth.RegisterScreen
+import com.example.lifterlab.ui.features.competition.CompetitionScreen
 import com.example.lifterlab.ui.features.dashboard.DashboardScreen
 import com.example.lifterlab.ui.features.history.HistoryScreen
 import com.example.lifterlab.ui.features.tools.OneRepMaxScreen
@@ -56,6 +57,7 @@ private sealed class AppScreen {
     object History : AppScreen()
     object OneRepMax : AppScreen()
     object PlateLoader : AppScreen()
+    object Competition : AppScreen()
 
     // Entrenamiento en curso: se abre desde el panel flotante de sesión activa.
     object SesionEnCurso : AppScreen()
@@ -145,7 +147,7 @@ private fun AppNavigator() {
     // La barra inferior es global: no se oculta al cambiar de modulo.
     val mostrarBarra = screen !is AppScreen.Login && screen !is AppScreen.Register
     val tabActual: LifterTab? = when (screen) {
-        AppScreen.Dashboard, AppScreen.History, AppScreen.OneRepMax, AppScreen.PlateLoader -> LifterTab.Inicio
+        AppScreen.Dashboard, AppScreen.History, AppScreen.OneRepMax, AppScreen.PlateLoader, AppScreen.Competition -> LifterTab.Inicio
         AppScreen.Routines, AppScreen.SesionEnCurso -> LifterTab.Rutinas
         AppScreen.Tools -> LifterTab.Herramientas
         AppScreen.Profile, AppScreen.ProfileEdit -> LifterTab.Perfil
@@ -172,6 +174,7 @@ private fun AppNavigator() {
                     onNavigateToHistory = { navegarA(AppScreen.History) },
                     onNavigateToOneRepMax = { navegarA(AppScreen.OneRepMax) },
                     onNavigateToPlateLoader = { navegarA(AppScreen.PlateLoader) },
+                    onNavigateToCompetition = { navegarA(AppScreen.Competition) },
                     onNavigateToTool = { tool -> irAModulo(AppScreen.Tools, tool) },
                     onStartRoutine = { routine -> iniciarRutinaDesdeInicio(routine) },
                     onStartExpress = { iniciarExpressDesdeInicio() }
@@ -182,6 +185,7 @@ private fun AppNavigator() {
                 )
                 AppScreen.OneRepMax -> OneRepMaxScreen(onBack = { volverA(AppScreen.Dashboard) })
                 AppScreen.PlateLoader -> PlateLoaderScreen(onBack = { volverA(AppScreen.Dashboard) })
+                AppScreen.Competition -> CompetitionScreen(onBack = { volverA(AppScreen.Dashboard) })
                 AppScreen.Routines -> RoutinesScreen(
                     onBack = { irAModulo(AppScreen.Dashboard) },
                     rutinaParaIniciar = rutinaParaIniciar,

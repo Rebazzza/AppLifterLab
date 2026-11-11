@@ -11,13 +11,14 @@ import androidx.compose.ui.graphics.Color
  * acento de marca #6366F1 y texto principal #E5E1E4.
  */
 val BgBackground = Color(0xFF09090B)       // bg_background
+val FeaturedSurface = Color(0xFF18172B)
 val BgSurfaceLow = Color(0xFF121212)       // bg_surface_container (tarjetas)
 val BgSurfaceHigh = Color(0xFF2A2A2C)      // contenedores destacados
 val BgSurfaceContainer = Color(0xFF1C1B1D) // chips y barra de navegación
 val OutlineVariant = Color(0xFF2A2A2A)     // outline_variant (bordes 1dp)
 val PrimaryAccent = Color(0xFF6366F1)      // primary_accent (brand core)
 val PrimaryContainer = Color(0xFF8083FF)
-val SecondaryAccent = Color(0xFFFFB77D)
+val SecondaryAccent = Color(0xFF8CB8FF)
 val TertiaryAccent = Color(0xFF4EDEA3)
 val ErrorAccent = Color(0xFFFFB4AB)
 val TextOnBackground = Color(0xFFE5E1E4)
@@ -25,7 +26,7 @@ val TextOnSurfaceVariant = Color(0xFFC7C4D7)
 
 // Asignación cromática de los 3 básicos (SBD) — ui-design-system.md §3.
 val ColorSquat = Color(0xFF10B981)    // Sentadilla - Verde Neón
-val ColorBench = Color(0xFFD97706)    // Press Banca - Naranja / Ámbar
+val ColorBench = PrimaryAccent        // Press Banca - azul índigo de LifterLab
 val ColorDeadlift = Color(0xFFEF4444) // Peso Muerto - Rojo Coral
 
 // Barra de navegación inferior (pill/cápsula).
@@ -39,6 +40,8 @@ private val LifterLabColors = darkColorScheme(
     primaryContainer = PrimaryContainer,
     onPrimaryContainer = Color(0xFF0B0B2E),
     secondary = SecondaryAccent,
+    secondaryContainer = Color(0xFF242047),
+    onSecondaryContainer = Color(0xFFA5B4FC),
     tertiary = TertiaryAccent,
     error = ErrorAccent,
     background = BgBackground,

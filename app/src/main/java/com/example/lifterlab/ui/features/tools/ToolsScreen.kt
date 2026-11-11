@@ -2,16 +2,27 @@ package com.example.lifterlab.ui.features.tools
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -24,18 +35,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.data.repository.ProfileRepository
-import com.example.lifterlab.ui.components.LifterCard
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.bottomBarClearance
 import com.example.lifterlab.ui.features.customexercises.CustomExercisesPanel
+import com.example.lifterlab.ui.features.competition.CompetitionScreen
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.ui.features.warmup.WarmupCalculatorPanel
+import com.example.lifterlab.ui.theme.ColorDeadlift
+import com.example.lifterlab.ui.theme.ColorSquat
+import com.example.lifterlab.ui.theme.PrimaryContainer
+import com.example.lifterlab.ui.theme.SecondaryAccent
+import com.example.lifterlab.ui.theme.TertiaryAccent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -62,6 +81,10 @@ enum class ToolEntry(
     CustomExercises(
         title = "Ejercicios Personalizados",
         description = "Crea y administra tus propios ejercicios con su tipo de medición."
+    ),
+    Competition(
+        title = "Competencia",
+        description = "Registra los tres intentos de cada levantamiento y calcula tu total SBD y DOTS."
     )
 }
 
@@ -80,7 +103,8 @@ private sealed interface ToolsRoute {
 @Composable
 fun ToolsScreen(
     initialTool: ToolEntry? = null,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToGuide: ()-> Unit
 ) {
     var route by remember {
         mutableStateOf<ToolsRoute>(
@@ -96,19 +120,24 @@ fun ToolsScreen(
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         when (val current = route) {
             is ToolsRoute.Index -> ToolsIndexPanel(
-                onOpen = { route = ToolsRoute.Detail(it) }
+                onOpen = { route = ToolsRoute.Detail(it) },
+                onNavigateToGuide = onNavigateToGuide,
             )
-            is ToolsRoute.Detail -> ToolDetailPanel(
-                tool = current.tool,
-                onBack = { route = ToolsRoute.Index }
-            )
+            is ToolsRoute.Detail -> {
+                if (current.tool == ToolEntry.Competition) {
+                    CompetitionScreen(onBack = { route = ToolsRoute.Index })
+                } else {
+                    ToolDetailPanel(tool = current.tool, onBack = { route = ToolsRoute.Index })
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun ToolsIndexPanel(
-    onOpen: (ToolEntry) -> Unit
+    onOpen: (ToolEntry) -> Unit,
+    onNavigateToGuide: ()-> Unit
 ) {
     Column(
         modifier = Modifier
@@ -135,37 +164,86 @@ private fun ToolsIndexPanel(
                     .padding(bottom = bottomBarClearance())
             ) {
                 ToolEntry.entries.forEach { tool ->
-                    LifterCard(Modifier.padding(top = 12.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpen(tool) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    text = tool.title,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = tool.description,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "Abrir ${tool.title}",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
+                    ToolCard(tool = tool, onClick = { onOpen(tool) })
                 }
+                GuideCard(onClick = onNavigateToGuide)
             }
         }
+    }
+}
+
+@Composable
+private fun GuideCard(onClick: () -> Unit) {
+    val accent = PrimaryContainer
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+            .clip(shape).background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(BorderStroke(1.dp, accent.copy(alpha = 0.35f)), shape)
+            .clickable(onClickLabel = "Abrir guía 1RM", onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(48.dp).background(accent, RoundedCornerShape(13.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Filled.MenuBook, contentDescription = null,
+                tint = MaterialTheme.colorScheme.background, modifier = Modifier.size(26.dp))
+        }
+        Column(Modifier.weight(1f).padding(start = 16.dp)) {
+            Text("Guía 1RM", color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text("Aprende a interpretar y aplicar tu repetición máxima.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(top = 6.dp))
+        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+            tint = accent, modifier = Modifier.padding(start = 8.dp))
+    }
+}
+
+@Composable
+private fun ToolCard(tool: ToolEntry, onClick: () -> Unit) {
+    val accent: Color
+    val icon: ImageVector
+    when (tool) {
+        ToolEntry.WarmupCalculator -> { accent = PrimaryContainer; icon = Icons.Filled.Tune }
+        ToolEntry.OneRepMaxCalculator -> { accent = TertiaryAccent; icon = Icons.Filled.Calculate }
+        ToolEntry.PlateLoader -> { accent = SecondaryAccent; icon = Icons.Filled.FitnessCenter }
+        ToolEntry.CustomExercises -> { accent = ColorSquat; icon = Icons.Filled.ListAlt }
+        ToolEntry.Competition -> { accent = ColorDeadlift; icon = Icons.Filled.EmojiEvents }
+    }
+    val featured = tool == ToolEntry.WarmupCalculator
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(BorderStroke(1.dp, accent.copy(alpha = if (featured) 0.65f else 0.35f)), shape)
+            .clickable(onClickLabel = "Abrir ${tool.title}", onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = if (featured) 23.dp else 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(if (featured) 56.dp else 48.dp)
+                .background(accent, RoundedCornerShape(13.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.background, modifier = Modifier.size(26.dp))
+        }
+        Column(Modifier.weight(1f).padding(start = 16.dp)) {
+            Text(tool.title, color = MaterialTheme.colorScheme.onSurface,
+                fontSize = if (featured) 20.sp else 17.sp, fontWeight = FontWeight.Bold,
+                lineHeight = if (featured) 24.sp else 21.sp)
+            Text(tool.description, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(top = 6.dp))
+        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+            tint = accent, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
@@ -234,6 +312,7 @@ private fun ToolDetailPanel(tool: ToolEntry, onBack: () -> Unit) {
                 // Este panel trae su propio scroll y su padding horizontal: solo
                 // necesita un alto acotado, que le da el Box que lo contiene.
                 ToolEntry.CustomExercises -> CustomExercisesPanel(Modifier.fillMaxSize())
+                ToolEntry.Competition -> Unit
             }
         }
     }

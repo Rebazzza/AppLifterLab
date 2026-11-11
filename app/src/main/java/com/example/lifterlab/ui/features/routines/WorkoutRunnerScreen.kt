@@ -167,7 +167,8 @@ fun WorkoutRunnerScreen(
                     RestTimerState.clear()
                     timerRemainingSeconds = 0
                     restRunning = false
-                    RestTimerNotifier.notifyRestFinished(context, name)
+                    // La alarma del sistema entrega la notificación para no duplicarla
+                    // mientras la pantalla está activa.
                     break
                 }
                 timerRemainingSeconds = secs
@@ -209,7 +210,7 @@ fun WorkoutRunnerScreen(
             // que la fila amarilla del Modo Gimnasio coincida con lo que quedará guardado.
             // Lectura opcional y no bloqueante: sin historial simplemente no hay marcas.
             val referencia = withContext(Dispatchers.IO) {
-                warmupRepository.getWorkoutSessions(userId, SESIONES_PARA_RECORDS)
+                warmupRepository.getAllWorkoutSessions(userId)
             }
             referencia.onSuccess { sesiones ->
                 referenciaPrevia = previousSessionReference(sesiones)
@@ -319,8 +320,14 @@ fun WorkoutRunnerScreen(
                     RestTimerWidget(
                         remainingSeconds = timerRemainingSeconds,
                         exerciseName = restExerciseName,
-                        onAdjustTime = { delta -> RestTimerState.adjust(delta) },
-                        onSkipRest = { RestTimerState.skip() },
+                        onAdjustTime = { delta ->
+                            RestTimerState.adjust(delta)
+                            RestTimerAlarm.schedule(context, RestTimerState.exerciseName, RestTimerState.targetTimeMillis)
+                        },
+                        onSkipRest = {
+                            RestTimerState.skip()
+                            RestTimerAlarm.cancel(context)
+                        },
                         modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                     )
                 }
@@ -343,8 +350,9 @@ fun WorkoutRunnerScreen(
                                     val setAct = exercise.sets.getOrNull(setIndex)
                                     val wasCompleted = setAct?.isCompleted == true
                                     if (!wasCompleted) {
-                                        // Inicia el temporizador de descanso automáticamente al completar la serie (105s = 1:45)
-                                        RestTimerState.start(exercise.name, 105)
+                                        // Cada ejercicio conserva su descanso configurable.
+                                        RestTimerState.start(exercise.name, exercise.restSeconds)
+                                        RestTimerAlarm.schedule(context, exercise.name, RestTimerState.targetTimeMillis)
                                     }
                                 }
                                 actualizarSesion { r -> updateSetData(r, exIndex, setIndex, weightKg, reps, rpe, isCompleted) }
@@ -354,6 +362,9 @@ fun WorkoutRunnerScreen(
                             },
                             onDeleteExercise = {
                                 actualizarSesion { r -> removeExercise(r, exIndex) }
+                            },
+                            onRestSecondsChange = { seconds ->
+                                actualizarSesion { r -> updateRestSeconds(r, exIndex, seconds) }
                             }
                         )
                     }
@@ -554,6 +565,8 @@ fun WorkoutRunnerScreen(
                     scope.launch {
                         // Solo se limpia la sesión activa; no se consolida la sesión.
                         activeSessionRepository.clearActiveSession()
+                        RestTimerState.clear()
+                        RestTimerAlarm.cancel(context)
                         guardando = false
                         context.toast("Rutina cancelada")
                         onFinished()
@@ -607,7 +620,7 @@ private fun terminarSesion(
         // del entrenamiento (sin historial simplemente no se marcan récords).
         val previas = withTimeoutOrNull(8_000) {
             withContext(Dispatchers.IO) {
-                warmupRepository.getWorkoutSessions(userId, SESIONES_PARA_RECORDS)
+                warmupRepository.getAllWorkoutSessions(userId)
             }
         }?.getOrElse { emptyList() } ?: emptyList()
         val sesion = buildWorkoutSession(routine, isExpress, durationMins, marcasHistoricas(previas))
@@ -616,6 +629,8 @@ private fun terminarSesion(
         result
             .onSuccess {
                 activeSessionRepository.clearActiveSession()
+                RestTimerState.clear()
+                RestTimerAlarm.cancel(context)
 
                 // Refleja en la plantilla los pesos y repeticiones usados en la sesión, de
                 // modo que la próxima vez que se arranque la rutina aparezcan esas cargas

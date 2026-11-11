@@ -239,6 +239,10 @@ fun CompetitionScreen(
                         mensajeError = "Marca al menos un intento válido para registrar la competencia."
                         return@PrimaryButton
                     }
+                    if (attemptsByLift.values.flatten().any { it.isSuccessful && it.weightKg <= 0.0 }) {
+                        mensajeError = "Todo intento marcado como válido debe tener un peso mayor a 0 kg."
+                        return@PrimaryButton
+                    }
                     val attemptError = attemptsByLift.values.flatten()
                         .mapNotNull { DotsCalculator.validateAttemptWeight(it.weightKg.takeIf { w -> w > 0 }) }
                         .firstOrNull()
@@ -250,6 +254,7 @@ fun CompetitionScreen(
                     val competition = Competition(
                         name = name.trim().ifEmpty { "Competencia" },
                         athleteWeightKg = bodyweight ?: 0.0,
+                        totalKg = total,
                         dotsScore = dots,
                         attempts = attemptsByLift
                     )

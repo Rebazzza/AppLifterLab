@@ -1,11 +1,16 @@
 package com.example.lifterlab
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -15,11 +20,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.lifterlab.data.model.ActiveSession
 import com.example.lifterlab.data.model.Routine
 import com.example.lifterlab.data.repository.AuthRepository
 import com.example.lifterlab.ui.components.ActiveSessionPanel
 import com.example.lifterlab.ui.components.LifterBottomNavBar
+import com.example.lifterlab.ui.components.LifterNavigationRail
 import com.example.lifterlab.ui.components.LifterTab
 import com.example.lifterlab.ui.features.auth.LoginScreen
 import com.example.lifterlab.ui.features.auth.RegisterScreen
@@ -32,17 +39,28 @@ import com.example.lifterlab.ui.features.tools.ToolEntry
 import com.example.lifterlab.ui.features.profile.ProfileEditScreen
 import com.example.lifterlab.ui.features.profile.ProfileViewScreen
 import com.example.lifterlab.ui.features.routines.RoutinesScreen
+import com.example.lifterlab.ui.features.tools.GuideScreen
 import com.example.lifterlab.ui.features.tools.ToolsScreen
 import com.example.lifterlab.ui.theme.LifterLabTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION_PERMISSION_REQUEST)
+        }
         setContent {
             LifterLabTheme {
                 AppNavigator()
             }
         }
+    }
+
+    private companion object {
+        const val NOTIFICATION_PERMISSION_REQUEST = 8001
     }
 }
 
@@ -58,26 +76,23 @@ private sealed class AppScreen {
     object OneRepMax : AppScreen()
     object PlateLoader : AppScreen()
     object Competition : AppScreen()
-
     // Entrenamiento en curso: se abre desde el panel flotante de sesión activa.
     object SesionEnCurso : AppScreen()
+    object Guide1RM : AppScreen()
+
+
+
 }
 
 @Composable
 private fun AppNavigator() {
     val authRepository = remember { AuthRepository() }
 
-    // Herramienta que el módulo Herramientas abre directamente (acceso desde el Inicio).
     var herramientaInicial: ToolEntry? by remember { mutableStateOf(null) }
 
-    // Arranque directo de un entrenamiento desde el acceso rápido del Inicio:
-    // una rutina elegida al azar o la Rutina Express. El módulo Rutinas los consume
-    // una sola vez y avisa con [onArranqueConsumido] para no repetirlos al volver.
     var rutinaParaIniciar: Routine? by remember { mutableStateOf(null) }
     var iniciarExpressDirecto by remember { mutableStateOf(false) }
 
-    // Sesión que abre el panel flotante, y un contador que obliga a que cada apertura
-    // sea una composición fresca (así el entrenamiento arranca con la sesión actual).
     var sesionParaRetomar: ActiveSession? by remember { mutableStateOf(null) }
     var aperturaSesion by remember { mutableStateOf(0) }
 
@@ -145,7 +160,8 @@ private fun AppNavigator() {
     BackHandler(enabled = pila.size > 1) { pila.removeAt(pila.lastIndex) }
 
     // La barra inferior es global: no se oculta al cambiar de modulo.
-    val mostrarBarra = screen !is AppScreen.Login && screen !is AppScreen.Register
+    val mostrarBarra = screen !is AppScreen.Login &&
+        screen !is AppScreen.Register
     val tabActual: LifterTab? = when (screen) {
         AppScreen.Dashboard, AppScreen.History, AppScreen.OneRepMax, AppScreen.PlateLoader, AppScreen.Competition -> LifterTab.Inicio
         AppScreen.Routines, AppScreen.SesionEnCurso -> LifterTab.Rutinas
@@ -154,10 +170,12 @@ private fun AppNavigator() {
         else -> null
     }
 
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val expanded = maxWidth >= 600.dp
         Box(
             Modifier
                 .fillMaxSize()
+                .padding(start = if (mostrarBarra && expanded) 80.dp else 0.dp)
         ) {
             when (screen) {
                 AppScreen.Login -> LoginScreen(
@@ -202,7 +220,8 @@ private fun AppNavigator() {
                 }
                 AppScreen.Tools -> ToolsScreen(
                     initialTool = herramientaInicial,
-                    onBack = { irAModulo(AppScreen.Dashboard) }
+                    onBack = { irAModulo(AppScreen.Dashboard) },
+                    onNavigateToGuide = {navegarA(AppScreen.Guide1RM)}
                 )
                 AppScreen.Profile -> ProfileViewScreen(
                     onNavigateToEdit = { navegarA(AppScreen.ProfileEdit) },
@@ -212,10 +231,13 @@ private fun AppNavigator() {
                 AppScreen.ProfileEdit -> ProfileEditScreen(
                     onBack = { volverA(AppScreen.Profile) }
                 )
+
+                AppScreen.Guide1RM -> GuideScreen(onBack = {volverA(AppScreen.Tools)})
+
             }
         }
 
-        if (mostrarBarra) {
+        if (mostrarBarra && !expanded) {
             LifterBottomNavBar(
                 currentTab = tabActual,
                 onNavigateToDashboard = { irAModulo(AppScreen.Dashboard) },
@@ -223,6 +245,17 @@ private fun AppNavigator() {
                 onNavigateToTools = { irAModulo(AppScreen.Tools) },
                 onNavigateToProfile = { irAModulo(AppScreen.Profile) },
                 modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
+        if (mostrarBarra && expanded) {
+            LifterNavigationRail(
+                currentTab = tabActual,
+                onNavigateToDashboard = { irAModulo(AppScreen.Dashboard) },
+                onNavigateToRoutines = { irAModulo(AppScreen.Routines) },
+                onNavigateToTools = { irAModulo(AppScreen.Tools) },
+                onNavigateToProfile = { irAModulo(AppScreen.Profile) },
+                modifier = Modifier.align(Alignment.CenterStart)
             )
         }
 

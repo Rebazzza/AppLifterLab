@@ -175,6 +175,9 @@ fun RoutineEditorScreen(
                             },
                             onDeleteExercise = {
                                 activeRoutine = removeExercise(activeRoutine, exIndex)
+                            },
+                            onRestSecondsChange = { seconds ->
+                                activeRoutine = updateRestSeconds(activeRoutine, exIndex, seconds)
                             }
                         )
                     }

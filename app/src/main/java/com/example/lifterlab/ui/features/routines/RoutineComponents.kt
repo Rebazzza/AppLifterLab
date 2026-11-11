@@ -95,6 +95,7 @@ fun ExerciseCard(
     onUpdateSet: (Int, Double?, Int?, Double?, Boolean?) -> Unit,
     onAddSet: () -> Unit,
     onDeleteExercise: () -> Unit,
+    onRestSecondsChange: (Int) -> Unit = {},
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {}
 ) {
@@ -133,6 +134,31 @@ fun ExerciseCard(
                     fontSize = 13.sp,
                     modifier = Modifier.padding(top = 2.dp)
                 )
+                Row(
+                    modifier = Modifier.padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Timer, null, tint = RoutineSkin.Tertiary, modifier = Modifier.size(15.dp))
+                    Text(
+                        "Descanso ${formatRestTimerSeconds(exercise.restSeconds)}",
+                        color = RoutineSkin.OnSurfaceVariant,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                    Text(
+                        "−15 s",
+                        color = RoutineSkin.PrimaryText,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(start = 12.dp).clickable { onRestSecondsChange(exercise.restSeconds - 15) }
+                    )
+                    Text(
+                        "+15 s",
+                        color = RoutineSkin.PrimaryText,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(start = 10.dp).clickable { onRestSecondsChange(exercise.restSeconds + 15) }
+                    )
+                }
                 // Indicador cromático SBD (ui-design-system.md §3): subrayado del
                 // movimiento básico cuando el ejercicio es Sentadilla / Banca / Peso Muerto.
                 sbdAccent(exercise.name)?.let { accent ->
@@ -214,14 +240,14 @@ private fun LogHeaderRow() {
             .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MonoLabel("Set", Modifier.weight(ColSet), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+        MonoLabel("Serie", Modifier.weight(ColSet), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
         MonoLabel("KG", Modifier.weight(ColKg), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
         Spacer(Modifier.size(6.dp))
-        MonoLabel("Reps", Modifier.weight(ColReps), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+        MonoLabel("Rep.", Modifier.weight(ColReps), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
         Spacer(Modifier.size(6.dp))
         MonoLabel("RPE", Modifier.weight(ColRpe), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
         Spacer(Modifier.size(6.dp))
-        MonoLabel("Done", Modifier.weight(ColDone), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
+        MonoLabel("Hecho", Modifier.weight(ColDone), RoutineSkin.OnSurfaceVariant, 10, TextAlign.Center)
     }
     RowDivider()
 }
@@ -450,10 +476,6 @@ private fun CompleteSetButton(completed: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(32.dp)
-            .then(
-                if (completed) Modifier.routineGlow(shape, RoutineSkin.Tertiary, 8.dp)
-                else Modifier
-            )
             .clip(shape)
             .background(
                 if (completed) RoutineSkin.Tertiary.copy(alpha = 0.2f)
@@ -1001,7 +1023,6 @@ fun RestTimerWidget(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .routineGlow(shape, RoutineSkin.PrimaryText, 8.dp)
             .clip(shape)
             .background(Color(0xFF141417))
             .border(1.dp, Color(0xFF242427), shape)
@@ -1016,7 +1037,7 @@ fun RestTimerWidget(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (exerciseName.isNotBlank()) "REST TIMER • $exerciseName" else "REST TIMER",
+                text = if (exerciseName.isNotBlank()) "DESCANSO • $exerciseName" else "DESCANSO",
                 color = RoutineSkin.OnSurfaceVariant,
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
@@ -1097,7 +1118,7 @@ fun RestTimerWidget(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Skip Rest",
+                text = "Omitir descanso",
                 color = RoutineSkin.OnSurface,
                 fontSize = 13.sp,
                 fontFamily = FontFamily.Monospace,

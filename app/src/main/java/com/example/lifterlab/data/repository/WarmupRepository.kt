@@ -77,6 +77,44 @@ class WarmupRepository(
     }
 
     /**
+     * Historial completo, paginado para no truncar récords, curvas o métricas semanales.
+     * La lectura conserva el comportamiento offline-first de las consultas acotadas.
+     */
+    suspend fun getAllWorkoutSessions(userId: String): Result<List<WorkoutSession>> {
+        val base = firestore.collection("users")
+            .document(userId)
+            .collection("workout_sessions")
+            .orderBy("date", Query.Direction.DESCENDING)
+
+        suspend fun load(source: Source?): List<WorkoutSession> {
+            val result = mutableListOf<WorkoutSession>()
+            var last: com.google.firebase.firestore.DocumentSnapshot? = null
+            var receivedFullPage: Boolean
+            do {
+                val pageQuery = if (last == null) base.limit(HISTORY_PAGE_SIZE)
+                else base.startAfter(last!!).limit(HISTORY_PAGE_SIZE)
+                val page = if (source == null) pageQuery.get().await() else pageQuery.get(source).await()
+                result += page.documents.mapNotNull { doc ->
+                    doc.toObject(WorkoutSession::class.java)?.copy(id = doc.id)
+                }
+                last = page.documents.lastOrNull()
+                receivedFullPage = page.documents.size.toLong() == HISTORY_PAGE_SIZE
+            } while (last != null && receivedFullPage)
+            return result
+        }
+
+        return try {
+            Result.success(load(null))
+        } catch (remoteError: Exception) {
+            try {
+                Result.success(load(Source.CACHE))
+            } catch (cacheError: Exception) {
+                Result.failure(cacheError)
+            }
+        }
+    }
+
+    /**
      * Fechas de las sesiones terminadas del usuario, de la más reciente a la más antigua.
      *
      * Alimenta la tarjeta de Consistencia para calcular la racha semanal. Igual que
@@ -148,5 +186,6 @@ class WarmupRepository(
 
     private companion object {
         const val TAG = "WarmupRepository"
+        const val HISTORY_PAGE_SIZE = 200L
     }
 }

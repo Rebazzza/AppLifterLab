@@ -62,7 +62,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val HISTORIAL_LIMITE = 20
+private const val MAX_SESIONES_VISTA_PREVIA = 3
+// Se obtiene una sesión adicional únicamente para saber si corresponde ofrecer el acceso
+// al historial completo, sin cargar toda la colección en el perfil.
+private const val LIMITE_CON_INDICADOR_DE_MAS = MAX_SESIONES_VISTA_PREVIA + 1
 
 /**
  * Vista de perfil (solo lectura): foto, nombre de usuario, correo, acceso a la
@@ -97,7 +100,9 @@ fun ProfileViewScreen(
             historialCargando = false
             return
         }
-        withContext(Dispatchers.IO) { warmupRepository.getWorkoutSessions(userId, HISTORIAL_LIMITE) }
+        withContext(Dispatchers.IO) {
+            warmupRepository.getWorkoutSessions(userId, LIMITE_CON_INDICADOR_DE_MAS)
+        }
             .onSuccess { historialCargando = false; sesiones = it }
             .onFailure { historialCargando = false }
     }
@@ -249,7 +254,11 @@ fun ProfileViewScreen(
                     ) {
                         CardTitle("Historial de Entrenamientos", Modifier.weight(1f))
                         Text(
-                            text = if (sesiones.isEmpty()) "" else "${sesiones.size}",
+                            text = when {
+                                sesiones.isEmpty() -> ""
+                                sesiones.size > MAX_SESIONES_VISTA_PREVIA -> "$MAX_SESIONES_VISTA_PREVIA+"
+                                else -> "${sesiones.size}"
+                            },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontFamily = FontFamily.Monospace
@@ -271,27 +280,30 @@ fun ProfileViewScreen(
                         }
 
                         else -> {
-                            sesiones.forEachIndexed { index, sesion ->
+                            val sesionesVisibles = sesiones.take(MAX_SESIONES_VISTA_PREVIA)
+                            sesionesVisibles.forEachIndexed { index, sesion ->
                                 SessionRow(
                                     session = sesion,
-                                    mostrarSeparador = index < sesiones.lastIndex,
+                                    mostrarSeparador = index < sesionesVisibles.lastIndex,
                                     onClick = { sesionSeleccionada = sesion }
                                 )
                             }
                         }
                     }
-                }
 
-                SecondaryButton(
-                    text = "Ver Historial Completo",
-                    onClick = { onNavigateToHistory() },
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+                    if (sesiones.size > MAX_SESIONES_VISTA_PREVIA) {
+                        SecondaryButton(
+                            text = "Mostrar más",
+                            onClick = { onNavigateToHistory() },
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
+                }
 
                 SecondaryButton(
                     text = "Cerrar Sesión",
                     onClick = { onSignOut() },
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(top = 16.dp),
                     minHeight = 52.dp
                 )
             }

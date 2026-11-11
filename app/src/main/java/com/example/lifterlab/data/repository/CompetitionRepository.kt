@@ -49,7 +49,7 @@ class CompetitionRepository(
             .collection("users")
             .document(userId)
             .collection("competitions")
-            .orderBy("dotsScore", Query.Direction.DESCENDING)
+            .orderBy("date", Query.Direction.DESCENDING)
             .limit(limit.toLong())
 
         return try {

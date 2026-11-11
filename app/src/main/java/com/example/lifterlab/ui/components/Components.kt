@@ -26,6 +26,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -59,6 +65,7 @@ import com.example.lifterlab.ui.theme.NavIconActive
 import com.example.lifterlab.ui.theme.NavIconInactive
 import com.example.lifterlab.ui.theme.OutlineVariant
 import com.example.lifterlab.ui.theme.PrimaryAccent
+import com.example.lifterlab.ui.theme.FeaturedSurface
 
 val CardCornerRadius = 12.dp
 val FieldCornerRadius = 12.dp
@@ -94,8 +101,8 @@ fun ScreenTitle(text: String, modifier: Modifier = Modifier) {
         text = text,
         modifier = modifier,
         color = MaterialTheme.colorScheme.onBackground,
-        fontSize = 28.sp,
-        fontWeight = FontWeight.Medium
+        fontSize = 30.sp,
+        fontWeight = FontWeight.Bold
     )
 }
 
@@ -115,8 +122,8 @@ fun CardTitle(text: String, modifier: Modifier = Modifier) {
         text = text,
         modifier = modifier,
         color = MaterialTheme.colorScheme.onBackground,
-        fontSize = 17.sp,
-        fontWeight = FontWeight.Medium
+        fontSize = 18.sp,
+        fontWeight = FontWeight.SemiBold
     )
 }
 
@@ -164,16 +171,22 @@ fun SuccessText(message: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun LifterCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun LifterCard(
+    modifier: Modifier = Modifier,
+    accent: Color? = null,
+    featured: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = MaterialTheme.colorScheme.surface,
+                color = if (featured) FeaturedSurface else MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(CardCornerRadius)
             )
             .border(
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(1.dp, if (featured) PrimaryAccent.copy(alpha = 0.65f)
+                    else accent?.copy(alpha = 0.45f) ?: MaterialTheme.colorScheme.outlineVariant),
                 shape = RoundedCornerShape(CardCornerRadius)
             )
             .padding(20.dp),
@@ -202,7 +215,7 @@ fun PrimaryButton(
             disabledContentColor = Color.White.copy(alpha = 0.7f)
         )
     ) {
-        Text(text = text, fontSize = 16.sp)
+        Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -224,7 +237,7 @@ fun SecondaryButton(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
     ) {
-        Text(text = text, fontSize = 15.sp)
+        Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -315,7 +328,7 @@ fun SbdStatCard(
     modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primaryContainer
 ) {
-    LifterCard(modifier) {
+    LifterCard(modifier, accent = accentColor) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -427,30 +440,61 @@ fun LifterBottomNavBar(
     onNavigateToProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val forma = RoundedCornerShape(50)
-    Row(
-        modifier = modifier
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 12.dp)
-            .fillMaxWidth()
-            .shadow(
-                elevation = 20.dp,
-                shape = forma,
-                clip = false,
-                ambientColor = Color.Black,
-                spotColor = Color.Black
-            )
-            .background(color = NavBarSurface, shape = forma)
-            .border(BorderStroke(1.dp, OutlineVariant), forma)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    NavigationBar(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 3.dp
     ) {
         NavItem("Inicio", Icons.Outlined.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard)
         NavItem("Rutinas", Icons.Outlined.FitnessCenter, currentTab == LifterTab.Rutinas, onNavigateToRoutines)
-        NavItem("Herram.", Icons.Outlined.Hardware, currentTab == LifterTab.Herramientas, onNavigateToTools)
+        NavItem("Herramientas", Icons.Outlined.Hardware, currentTab == LifterTab.Herramientas, onNavigateToTools)
         NavItem("Perfil", Icons.Outlined.Person, currentTab == LifterTab.Perfil, onNavigateToProfile)
     }
+}
+
+/** Barra lateral para pantallas anchas; conserva las mismas pestañas del menú inferior. */
+@Composable
+fun LifterNavigationRail(
+    currentTab: LifterTab?,
+    onNavigateToDashboard: () -> Unit,
+    onNavigateToRoutines: () -> Unit,
+    onNavigateToTools: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    NavigationRail(
+        modifier = modifier.padding(start = 12.dp),
+        containerColor = NavBarSurface,
+        contentColor = NavIconInactive
+    ) {
+        RailItem("Inicio", Icons.Outlined.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard)
+        RailItem("Rutinas", Icons.Outlined.FitnessCenter, currentTab == LifterTab.Rutinas, onNavigateToRoutines)
+        RailItem("Herramientas", Icons.Outlined.Hardware, currentTab == LifterTab.Herramientas, onNavigateToTools)
+        RailItem("Perfil", Icons.Outlined.Person, currentTab == LifterTab.Perfil, onNavigateToProfile)
+    }
+}
+
+@Composable
+private fun RailItem(
+    label: String,
+    icon: ImageVector,
+    isActive: Boolean,
+    onClick: () -> Unit
+) {
+    NavigationRailItem(
+        selected = isActive,
+        onClick = onClick,
+        icon = { Icon(icon, contentDescription = label) },
+        label = { Text(label, fontSize = 10.sp) },
+        alwaysShowLabel = false,
+        colors = NavigationRailItemDefaults.colors(
+            selectedIconColor = NavIconActive,
+            selectedTextColor = PrimaryAccent,
+            indicatorColor = PrimaryAccent,
+            unselectedIconColor = NavIconInactive,
+            unselectedTextColor = NavIconInactive
+        )
+    )
 }
 
 @Composable
@@ -460,37 +504,18 @@ private fun RowScope.NavItem(
     isActive: Boolean,
     onClick: () -> Unit
 ) {
-    val pillShape = RoundedCornerShape(50)
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .clip(RoundedCornerShape(18.dp))
-            .clickable { onClick() }
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(pillShape)
-                .background(if (isActive) PrimaryAccent else Color.Transparent)
-                .padding(horizontal = 18.dp, vertical = 6.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (isActive) NavIconActive else NavIconInactive,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-        Text(
-            text = label,
-            color = if (isActive) PrimaryAccent else NavIconInactive,
-            fontSize = 10.sp,
-            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-            fontFamily = FontFamily.Monospace,
-            maxLines = 1,
-            modifier = Modifier.padding(top = 3.dp)
+    NavigationBarItem(
+        selected = isActive,
+        onClick = onClick,
+        icon = { Icon(icon, contentDescription = null) },
+        label = { Text(label, maxLines = 1) },
+        alwaysShowLabel = true,
+        colors = NavigationBarItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            selectedTextColor = MaterialTheme.colorScheme.onSurface,
+            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
+    )
 }

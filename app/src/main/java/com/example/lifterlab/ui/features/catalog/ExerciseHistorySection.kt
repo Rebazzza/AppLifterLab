@@ -83,7 +83,7 @@ fun ExerciseHistorySection(
         cargando = true
         mensajeError = ""
         val result = withContext(Dispatchers.IO) {
-            warmupRepository.getWorkoutSessions(userId, SESIONES_PARA_ANALISIS)
+            warmupRepository.getAllWorkoutSessions(userId)
         }
         result
             .onSuccess { sesiones ->

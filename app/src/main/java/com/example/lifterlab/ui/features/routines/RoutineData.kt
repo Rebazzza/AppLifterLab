@@ -54,6 +54,13 @@ fun removeExercise(routine: Routine, exIndex: Int): Routine {
     return routine.copy(exercises = exercises.renumberExecutionOrder())
 }
 
+fun updateRestSeconds(routine: Routine, exIndex: Int, seconds: Int): Routine {
+    if (exIndex !in routine.exercises.indices) return routine
+    val exercises = routine.exercises.toMutableList()
+    exercises[exIndex] = exercises[exIndex].copy(restSeconds = seconds.coerceIn(15, 15 * 60))
+    return routine.copy(exercises = exercises)
+}
+
 /**
  * Reordenamiento de ejercicios (drag-and-drop o flechas Subir/Bajar).
  * Mueve el ejercicio de [fromIndex] a [toIndex] dentro de la rutina o sesión activa y

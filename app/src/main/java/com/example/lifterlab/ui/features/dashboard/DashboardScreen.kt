@@ -71,6 +71,7 @@ import com.example.lifterlab.ui.theme.ColorDeadlift
 import com.example.lifterlab.ui.theme.ColorSquat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Calendar
 
 /**
  * Historial que alimenta la tarjeta de última sesión y los récords SBD. Se pide el mismo
@@ -113,8 +114,9 @@ fun DashboardScreen(
     val userId = remember { authRepository.getCurrentUser()?.uid.orEmpty() }
     var profile by remember { mutableStateOf(UserProfile()) }
 
-    // resumen de la ultima sesion registrada por el atleta en el historial.
-    var lastSession by remember { mutableStateOf<WorkoutSession?>(null) }
+    // Indicadores calculados solo con las sesiones consolidadas del historial.
+    var recentSessions by remember { mutableStateOf<List<WorkoutSession>>(emptyList()) }
+    var weeklyVolumeKg by remember { mutableStateOf(0.0) }
     var sesionCargada by remember { mutableStateOf(false) }
 
     // Última rutina guardada que se terminó (se ignoran las sesiones Express).
@@ -144,10 +146,11 @@ fun DashboardScreen(
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             val result = withContext(Dispatchers.IO) {
-                warmupRepository.getWorkoutSessions(userId, SESIONES_DASHBOARD)
+                warmupRepository.getAllWorkoutSessions(userId)
             }
             result.onSuccess { sesiones ->
-                lastSession = sesiones.firstOrNull()
+                recentSessions = sesiones.take(3)
+                weeklyVolumeKg = volumenDeEstaSemana(sesiones)
                 recordsSbd = mejoresPesosPorMovimiento(sesiones)
                 ultimaRutinaCompletada = sesiones
                     .firstOrNull { !it.isFreeSession }
@@ -229,22 +232,19 @@ fun DashboardScreen(
                 )
             }
 
-            // RF25/RF29 — El número grande es el peso más alto conocido del movimiento:
-            // el PR del historial si supera el 1RM del perfil (que suele quedarse corto).
+            // RF18/RF29 — El número grande proviene exclusivamente de series reales
+            // consolidadas en el historial, nunca de un 1RM manual del perfil.
             val sentadillaPr = recordsSbd[MovimientoBasico.SENTADILLA] ?: 0.0
             val bancaPr = recordsSbd[MovimientoBasico.PRESS_BANCA] ?: 0.0
             val muertoPr = recordsSbd[MovimientoBasico.PESO_MUERTO] ?: 0.0
-            val sentadillaPeso = maxOf(profile.squat1RM, sentadillaPr)
-            val bancaPeso = maxOf(profile.bench1RM, bancaPr)
-            val muertoPeso = maxOf(profile.deadlift1RM, muertoPr)
-            val sentadillaEsPR = sentadillaPr > profile.squat1RM
-            val bancaEsPR = bancaPr > profile.bench1RM
-            val muertoEsPR = muertoPr > profile.deadlift1RM
+            val sentadillaPeso = sentadillaPr
+            val bancaPeso = bancaPr
+            val muertoPeso = muertoPr
 
             SbdStatCard(
                 title = "Sentadilla",
-                badgeText = if (sentadillaEsPR) "\u2605 PR" else "\u2191 +2.5KG",
-                badgeNeutral = false,
+                badgeText = if (sentadillaPr > 0) "\u2605 PR" else "SIN REGISTRO",
+                badgeNeutral = sentadillaPr <= 0,
                 weightText = formatKg(sentadillaPeso),
                 goalText = calculateGoalPercent(sentadillaPeso, profile.squatGoalKg),
                 fraction = progressFraction(sentadillaPeso, profile.squatGoalKg),
@@ -253,8 +253,8 @@ fun DashboardScreen(
             )
             SbdStatCard(
                 title = "Press Banca",
-                badgeText = if (bancaEsPR) "\u2605 PR" else "-",
-                badgeNeutral = !bancaEsPR,
+                badgeText = if (bancaPr > 0) "\u2605 PR" else "SIN REGISTRO",
+                badgeNeutral = bancaPr <= 0,
                 weightText = formatKg(bancaPeso),
                 goalText = calculateGoalPercent(bancaPeso, profile.benchGoalKg),
                 fraction = progressFraction(bancaPeso, profile.benchGoalKg),
@@ -263,8 +263,8 @@ fun DashboardScreen(
             )
             SbdStatCard(
                 title = "Peso Muerto",
-                badgeText = if (muertoEsPR) "\u2605 PR" else "\u2191 +5.0KG",
-                badgeNeutral = false,
+                badgeText = if (muertoPr > 0) "\u2605 PR" else "SIN REGISTRO",
+                badgeNeutral = muertoPr <= 0,
                 weightText = formatKg(muertoPeso),
                 goalText = calculateGoalPercent(muertoPeso, profile.deadliftGoalKg),
                 fraction = progressFraction(muertoPeso, profile.deadliftGoalKg),
@@ -278,8 +278,13 @@ fun DashboardScreen(
                 todayIndex = dayIndexMonday()
             )
 
-            LastSessionCard(
-                session = lastSession,
+            WeeklyVolumeCard(
+                volumeKg = weeklyVolumeKg,
+                isLoading = !sesionCargada
+            )
+
+            RecentSessionsCard(
+                sessions = recentSessions,
                 isLoading = !sesionCargada,
                 onNavigateToHistory = onNavigateToHistory
             )
@@ -292,11 +297,10 @@ fun DashboardScreen(
                 onStartExpress = onStartExpress
             )
 
-CompetitionCard(onNavigateToCompetition)
-
             ToolsCard(
                 onNavigateToOneRepMax = onNavigateToOneRepMax,
                 onNavigateToPlateLoader = onNavigateToPlateLoader,
+                onNavigateToCompetition = onNavigateToCompetition,
                 onNavigateToTool = onNavigateToTool
             )
             }
@@ -478,99 +482,96 @@ private fun StatBox(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-private fun LastSessionCard(
-    session: WorkoutSession?,
+private fun WeeklyVolumeCard(volumeKg: Double, isLoading: Boolean) {
+    LifterCard(Modifier.padding(top = 16.dp)) {
+        CardTitle("Volumen semanal")
+        Text(
+            text = if (isLoading) "…" else formatVolumeKg(volumeKg),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            fontSize = 34.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        CardCaption("Carga completada desde el lunes hasta hoy", Modifier.padding(top = 4.dp))
+    }
+}
+
+@Composable
+private fun RecentSessionsCard(
+    sessions: List<WorkoutSession>,
     isLoading: Boolean,
     onNavigateToHistory: () -> Unit
 ) {
     LifterCard(Modifier.padding(top = 16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CardTitle("Última Sesión", Modifier.weight(1f))
-            Text(
-                text = when {
-                    session != null -> formatSessionDate(session.date)
-                    isLoading -> "..."
-                    else -> "\u2014"
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 13.sp,
-                fontFamily = FontFamily.Monospace
-            )
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            CardTitle("Últimas sesiones", Modifier.weight(1f))
+            CardCaption(if (isLoading) "…" else "${sessions.size} RECIENTES", mono = true)
         }
-
         Spacer(Modifier.height(12.dp))
-
-        if (session == null) {
+        if (sessions.isEmpty()) {
             CardCaption("SIN SESIONES REGISTRADAS")
             Text(
-                text = "Completa un entrenamiento para ver aqu\u00ED el resumen de tu \u00FAltima sesi\u00F3n.",
+                text = "Completa un entrenamiento para ver aquí tu actividad reciente.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(top = 6.dp)
             )
         } else {
-            Text(
-                text = session.routineName,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = if (session.isFreeSession) "SESI\u00D3N EXPRESS" else "SESI\u00D3N DE RUTINA",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
-            )
-
-            StatBox(Icons.Filled.FitnessCenter, "VOLUMEN TOTAL", formatVolumeKg(session.totalVolumeKg))
-            Spacer(Modifier.height(8.dp))
-            StatBox(Icons.Filled.Schedule, "DURACIÓN", "${session.durationMins} min")
-            Spacer(Modifier.height(8.dp))
-            StatBox(
-                icon = Icons.Filled.List,
-                label = "EJERCICIOS / SERIES",
-                // RF29 — solo cuentan las series ejecutadas; las omitidas no suman.
-                value = "${session.exercises.size} / " +
-                    "${session.exercises.sumOf { ex -> ex.sets.count { it.isCompleted } }}"
-            )
+            sessions.forEachIndexed { index, session ->
+                RecentSessionRow(session)
+                if (index < sessions.lastIndex) Spacer(Modifier.height(8.dp))
+            }
         }
-
         Spacer(Modifier.height(14.dp))
-        SecondaryButton(
-            text = "VER REGISTRO \u2192",
-            onClick = { onNavigateToHistory() },
-            minHeight = 46.dp
-        )
+        SecondaryButton(text = "VER REGISTRO →", onClick = onNavigateToHistory, minHeight = 46.dp)
     }
 }
 
 @Composable
-private fun CompetitionCard(onNavigateToCompetition: () -> Unit) {
-    LifterCard(Modifier.padding(top = 16.dp)) {
-        CardTitle("Competencia")
-        Text(
-            text = "Planifica y registra tus 3 intentos de Sentadilla, Banca y Peso Muerto, y obtén tu total SBD y puntaje DOTS.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
-            modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
-        )
-        SecondaryButton(
-            text = "ABRIR MÓDULO DE COMPETENCIA →",
-            onClick = onNavigateToCompetition,
-            minHeight = 46.dp
-        )
+private fun RecentSessionRow(session: WorkoutSession) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(session.routineName, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(
+                "${formatSessionDate(session.date)} · ${if (session.isFreeSession) "EXPRESS" else "RUTINA"}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(formatVolumeKg(session.totalVolumeKg), color = MaterialTheme.colorScheme.primaryContainer, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+            Text("${session.durationMins} min", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
+        }
     }
+}
+
+/** Volumen ejecutado desde el lunes a las 00:00, en la zona horaria local. */
+internal fun volumenDeEstaSemana(sessions: List<WorkoutSession>, nowMillis: Long = System.currentTimeMillis()): Double {
+    val start = Calendar.getInstance().apply {
+        timeInMillis = nowMillis
+        firstDayOfWeek = Calendar.MONDAY
+        set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+    return sessions.filter { it.date.toDate().time >= start }.sumOf { it.totalVolumeKg }
 }
 
 @Composable
 private fun ToolsCard(
     onNavigateToOneRepMax: () -> Unit,
     onNavigateToPlateLoader: () -> Unit,
+    onNavigateToCompetition: () -> Unit,
     onNavigateToTool: (ToolEntry) -> Unit
 ) {
     LifterCard(Modifier.padding(top = 16.dp)) {
@@ -604,6 +605,12 @@ private fun ToolsCard(
             onClick = { onNavigateToTool(ToolEntry.CustomExercises) },
             minHeight = 46.dp
         )
+        Spacer(Modifier.height(8.dp))
+        SecondaryButton(
+            text = "COMPETENCIA →",
+            onClick = onNavigateToCompetition,
+            minHeight = 46.dp
+        )
     }
 }
 
@@ -615,8 +622,13 @@ private fun NextSessionCard(
     onStartRoutine: (Routine) -> Unit,
     onStartExpress: () -> Unit
 ) {
-    LifterCard(Modifier.padding(top = 16.dp)) {
-        CardTitle("Próxima Sesión")
+    LifterCard(Modifier.padding(top = 16.dp), featured = true) {
+        Text(
+            text = "Próxima Sesión",
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 23.sp,
+            fontWeight = FontWeight.Bold
+        )
         Text(
             text = "Acceso rápido a una rutina al azar, distinta a la última que completaste.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -667,5 +679,6 @@ private fun NextSessionCard(
             onClick = onStartExpress,
             minHeight = 46.dp
         )
+
     }
 }

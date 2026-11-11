@@ -34,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -43,7 +42,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -70,7 +68,7 @@ object RoutineSkin {
     val PrimaryContainer = Color(0xFF8083FF)
     val InversePrimary = Color(0xFF6366F1)      // botones principales
     val Tertiary = Color(0xFF4EDEA3)
-    val Secondary = Color(0xFFFFB77D)
+    val Secondary = Color(0xFF8CB8FF)
     val OutlineVariant = Color(0xFF2A2A2A)
     val OnSurface = Color(0xFFE5E1E4)
     val OnSurfaceVariant = Color(0xFFC7C4D7)
@@ -79,23 +77,10 @@ object RoutineSkin {
 
     // RF25 — Indicador visual de Récord Personal: amarillo de disco IPF 15 kg, con
     // relleno translúcido para teñir la fila sin perder legibilidad sobre el tema oscuro.
-    val RecordYellow = Color(0xFFFFD54F)
-    val RecordYellowContainer = Color(0x40FFD54F)
-    val OnRecordYellow = Color(0xFF1A1A0B)
+    val RecordYellow = Color(0xFFA5B4FC)
+    val RecordYellowContainer = Color(0x2E6366F1)
+    val OnRecordYellow = Color(0xFF0B0B0D)
 }
-
-/** Halo suave del Ejemplo.html (`box-shadow: 0 0 15px`). */
-fun Modifier.routineGlow(
-    shape: Shape,
-    color: Color = RoutineSkin.PrimaryText,
-    elevation: Dp = 10.dp
-): Modifier = this.shadow(
-    elevation = elevation,
-    shape = shape,
-    clip = false,
-    ambientColor = color,
-    spotColor = color
-)
 
 /** Contenedor "steel-card": superficie oscura con borde sutil y esquinas redondeadas. */
 @Composable
@@ -188,7 +173,6 @@ fun RowScope.DarkNumberField(
     Box(
         modifier = Modifier
             .weight(weight)
-            .then(if (focused) Modifier.routineGlow(shape, focusColor, 8.dp) else Modifier)
             .clip(shape)
             .background(RoutineSkin.InputBackground)
             .border(BorderStroke(1.dp, border), shape)
@@ -266,10 +250,6 @@ fun AccentWideButton(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .then(
-                if (enabled) Modifier.routineGlow(shape, RoutineSkin.InversePrimary, 12.dp)
-                else Modifier
-            )
             .clip(shape)
             .background(
                 if (enabled) RoutineSkin.InversePrimary
@@ -386,9 +366,9 @@ fun RoutineTopBar(
             Text(
                 text = "LIFTERLAB",
                 color = RoutineSkin.PrimaryText,
-                fontSize = 18.sp,
+                fontSize = 19.sp,
                 fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp
+                letterSpacing = 1.8.sp
             )
             Spacer(Modifier.weight(1f))
             trailingContent?.invoke()
@@ -396,8 +376,8 @@ fun RoutineTopBar(
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(1.dp)
-                .background(RoutineSkin.OutlineVariant)
+                .height(2.dp)
+                .background(RoutineSkin.Primary)
         )
     }
 }

@@ -111,13 +111,8 @@ fun RoutinesScreen(
             }
         )
     }
-
-    // El pedido de arranque directo ya quedó capturado en [route]: se limpia para
-    // que una nueva visita al módulo empiece en el listado.
     LaunchedEffect(Unit) { onArranqueConsumido() }
 
-    // Boton atras nativo dentro del modulo: vuelve al listado y, desde el
-    // listado, sale del modulo hacia el Inicio.
     BackHandler(enabled = route !is RoutinesRoute.List) { route = RoutinesRoute.List }
     BackHandler(enabled = route is RoutinesRoute.List) { onBack() }
 
@@ -182,8 +177,6 @@ private fun RoutinesListScreen(
     Surface(color = RoutineSkin.Background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // Vista raíz del menú: el panel no muestra botón de volver (la barra
-            // flotante y el botón atrás nativo cubren la salida del módulo).
             RoutineTopBar()
 
             Column(
@@ -193,35 +186,37 @@ private fun RoutinesListScreen(
                     .padding(horizontal = 16.dp, vertical = 18.dp)
                     .padding(bottom = bottomBarClearance())
             ) {
-                Text(
-                    text = "Rutinas",
-                    color = RoutineSkin.OnSurface,
-                    fontSize = 27.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = 32.sp
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Rutinas",
+                        color = RoutineSkin.OnSurface,
+                        fontSize = 27.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        lineHeight = 32.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(RoutineSkin.Primary)
+                            .clickable { onCreate() }
+                            .padding(horizontal = 14.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = null, tint = RoutineSkin.OnPrimary,
+                            modifier = Modifier.size(18.dp))
+                        Text("Crear", color = RoutineSkin.OnPrimary, fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 5.dp))
+                    }
+                }
                 Text(
                     text = "Crea, edita e inicia tus entrenamientos.",
                     color = RoutineSkin.OnSurfaceVariant,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(top = 4.dp)
-                )
-
-                Spacer(Modifier.height(18.dp))
-                AccentWideButton(
-                    text = "Crear Nueva Rutina",
-                    onClick = onCreate,
-                    trailingIcon = Icons.Filled.Add
-                )
-
-                ExpressCard(onClick = onExpress)
-
-                Spacer(Modifier.height(12.dp))
-                SteelOutlineButton(
-                    text = "Catálogos",
-                    contentColor = RoutineSkin.OnSurfaceVariant,
-                    onClick = onNavigateToCatalog,
-                    leadingIcon = Icons.Filled.ChevronRight
                 )
 
                 MonoLabel(
@@ -251,6 +246,16 @@ private fun RoutinesListScreen(
                         )
                     }
                 }
+
+                ExpressCard(onClick = onExpress)
+
+                Spacer(Modifier.height(12.dp))
+                SteelOutlineButton(
+                    text = "Catálogos",
+                    contentColor = RoutineSkin.PrimaryText,
+                    onClick = onNavigateToCatalog,
+                    leadingIcon = Icons.Filled.ChevronRight
+                )
 
                 if (mensajeError.isNotEmpty()) {
                     Spacer(Modifier.height(12.dp))
@@ -302,8 +307,8 @@ private fun ExpressCard(onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(top = 12.dp)
             .clip(shape)
-            .background(RoutineSkin.SteelSurface)
-            .border(BorderStroke(1.dp, RoutineSkin.PrimaryText), shape)
+            .background(RoutineSkin.SurfaceContainer)
+            .border(BorderStroke(1.dp, RoutineSkin.SteelBorder), shape)
             .clickable { onClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -326,7 +331,7 @@ private fun ExpressCard(onClick: () -> Unit) {
         Column(Modifier.weight(1f).padding(start = 12.dp)) {
             Text(
                 text = "Rutina Express",
-                color = RoutineSkin.PrimaryText,
+                color = RoutineSkin.OnSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )

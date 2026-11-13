@@ -424,13 +424,7 @@ fun LifterProgressBar(
     }
 }
 
-/**
- * Barra de navegación flotante global: cápsula oscura (#1C1B1D) sobre el fondo
- * casi negro de la app (#09090B). Usa íconos line-art (Outlined) y marca la pestaña
- * activa con un contenedor cápsula relleno de Azul Claro / Violeta (#6366F1) y el
- * ícono en color oscuro; las pestañas inactivas quedan en gris tenue, sin contenedor.
- * Se monta una sola vez desde MainActivity.
- */
+/** Navegación global clara con azul titanio para la pestaña activa. */
 @Composable
 fun LifterBottomNavBar(
     currentTab: LifterTab?,
@@ -438,17 +432,18 @@ fun LifterBottomNavBar(
     onNavigateToRoutines: () -> Unit,
     onNavigateToTools: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    lightAppearance: Boolean = false
 ) {
     NavigationBar(
         modifier = modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = if (lightAppearance) Color.White else MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 3.dp
     ) {
-        NavItem("Inicio", Icons.Outlined.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard)
-        NavItem("Rutinas", Icons.Outlined.FitnessCenter, currentTab == LifterTab.Rutinas, onNavigateToRoutines)
-        NavItem("Herramientas", Icons.Outlined.Hardware, currentTab == LifterTab.Herramientas, onNavigateToTools)
-        NavItem("Perfil", Icons.Outlined.Person, currentTab == LifterTab.Perfil, onNavigateToProfile)
+        NavItem("Inicio", Icons.Outlined.Home, currentTab == LifterTab.Inicio, onNavigateToDashboard, lightAppearance)
+        NavItem("Rutinas", Icons.Outlined.FitnessCenter, currentTab == LifterTab.Rutinas, onNavigateToRoutines, lightAppearance)
+        NavItem("Herramientas", Icons.Outlined.Hardware, currentTab == LifterTab.Herramientas, onNavigateToTools, lightAppearance)
+        NavItem("Perfil", Icons.Outlined.Person, currentTab == LifterTab.Perfil, onNavigateToProfile, lightAppearance)
     }
 }
 
@@ -488,7 +483,7 @@ private fun RailItem(
         label = { Text(label, fontSize = 10.sp) },
         alwaysShowLabel = false,
         colors = NavigationRailItemDefaults.colors(
-            selectedIconColor = NavIconActive,
+            selectedIconColor = Color.White,
             selectedTextColor = PrimaryAccent,
             indicatorColor = PrimaryAccent,
             unselectedIconColor = NavIconInactive,
@@ -502,7 +497,8 @@ private fun RowScope.NavItem(
     label: String,
     icon: ImageVector,
     isActive: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    lightAppearance: Boolean
 ) {
     NavigationBarItem(
         selected = isActive,
@@ -511,11 +507,11 @@ private fun RowScope.NavItem(
         label = { Text(label, maxLines = 1) },
         alwaysShowLabel = true,
         colors = NavigationBarItemDefaults.colors(
-            selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            selectedTextColor = MaterialTheme.colorScheme.onSurface,
-            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+            selectedIconColor = if (lightAppearance) PrimaryAccent else MaterialTheme.colorScheme.onSecondaryContainer,
+            selectedTextColor = if (lightAppearance) PrimaryAccent else MaterialTheme.colorScheme.onSurface,
+            indicatorColor = if (lightAppearance) Color(0xFFEEF0FF) else MaterialTheme.colorScheme.secondaryContainer,
+            unselectedIconColor = if (lightAppearance) Color(0xFF60667A) else MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = if (lightAppearance) Color(0xFF60667A) else MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
 }

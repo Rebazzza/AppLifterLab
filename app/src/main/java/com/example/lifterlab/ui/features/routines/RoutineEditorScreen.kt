@@ -314,7 +314,7 @@ private fun RoutineNameField(
                         if (value.isEmpty()) {
                             Text(
                                 text = "Nombre de la Rutina...",
-                                color = RoutineSkin.OnSurfaceVariant.copy(alpha = 0.5f),
+                                color = RoutineSkin.OnSurfaceVariant,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Medium
                             )

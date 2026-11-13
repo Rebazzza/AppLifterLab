@@ -45,41 +45,34 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * Tokens visuales del módulo de rutinas: conservan la estructura "steel" de
- * Ejemplo.html (tarjetas oscuras con borde sutil, campos "input-dark" y halo de
- * foco) pero alineados a la paleta oficial de `ui-design-system.md`: fondo #09090B,
- * superficies #121212 con borde #2A2A2A y acento de marca #6366F1. Se aíslan aquí
- * para que Crear, Editar e Iniciar compartan la misma estética sin tocar el tema global.
- */
+/** Colores claros compartidos por el listado, editor y sesión de rutinas. */
 object RoutineSkin {
-    val Background = Color(0xFF09090B)          // bg_background
-    val SteelSurface = Color(0xFF121212)        // bg_surface_container
-    val SteelBorder = Color(0xFF2A2A2A)         // outline_variant
-    val InputBackground = Color(0xFF0B0B0D)     // surface_container_lowest
-    val SurfaceContainerLowest = Color(0xFF0B0B0D)
-    val SurfaceContainerLow = Color(0xFF121212)
-    val SurfaceContainer = Color(0xFF1C1B1D)
-    val SurfaceContainerHigh = Color(0xFF2A2A2C)
-    val SurfaceContainerHighest = Color(0xFF353437)
-    val Primary = Color(0xFF6366F1)             // primary_accent (rellenos)
-    val PrimaryText = Color(0xFFA5B4FC)         // acento legible sobre fondos oscuros
-    val OnPrimary = Color(0xFFFFFFFF)
-    val PrimaryContainer = Color(0xFF8083FF)
-    val InversePrimary = Color(0xFF6366F1)      // botones principales
-    val Tertiary = Color(0xFF4EDEA3)
-    val Secondary = Color(0xFF8CB8FF)
-    val OutlineVariant = Color(0xFF2A2A2A)
-    val OnSurface = Color(0xFFE5E1E4)
-    val OnSurfaceVariant = Color(0xFFC7C4D7)
-    val Error = Color(0xFFFFB4AB)
-    val RowAlt = Color(0x14FFFFFF)
+    val Background = Color(0xFFF8F9FD)
+    val SteelSurface = Color.White
+    val SteelBorder = Color(0xFFE5E8F2)
+    val InputBackground = Color(0xFFF5F6FC)
+    val SurfaceContainerLowest = Color.White
+    val SurfaceContainerLow = Color.White
+    val SurfaceContainer = Color(0xFFEEF0FF)
+    val SurfaceContainerHigh = Color(0xFFE8EBF6)
+    val SurfaceContainerHighest = Color(0xFFDDE2F3)
+    val Primary = Color(0xFF6366F1)
+    val PrimaryText = Color(0xFF4E51CE)
+    val OnPrimary = Color.White
+    val PrimaryContainer = Color(0xFF6366F1)
+    val InversePrimary = Color(0xFF6366F1)
+    val Tertiary = Color(0xFF16815E)
+    val Secondary = Color(0xFF365FBB)
+    val OutlineVariant = Color(0xFFE5E8F2)
+    val OnSurface = Color(0xFF171B2C)
+    val OnSurfaceVariant = Color(0xFF60667A)
+    val Error = Color(0xFFB42332)
+    val RowAlt = Color(0x0A6366F1)
 
-    // RF25 — Indicador visual de Récord Personal: amarillo de disco IPF 15 kg, con
-    // relleno translúcido para teñir la fila sin perder legibilidad sobre el tema oscuro.
-    val RecordYellow = Color(0xFFA5B4FC)
-    val RecordYellowContainer = Color(0x2E6366F1)
-    val OnRecordYellow = Color(0xFF0B0B0D)
+    // RF25: el récord usa azul titanio con un fondo lavanda tenue.
+    val RecordYellow = Color(0xFF4E51CE)
+    val RecordYellowContainer = Color(0xFFEEF0FF)
+    val OnRecordYellow = Color.White
 }
 
 /** Contenedor "steel-card": superficie oscura con borde sutil y esquinas redondeadas. */
@@ -198,7 +191,7 @@ fun RowScope.DarkNumberField(
                     if (value.isEmpty()) {
                         Text(
                             text = hint,
-                            color = RoutineSkin.OnSurfaceVariant.copy(alpha = 0.5f),
+                            color = RoutineSkin.OnSurfaceVariant,
                             fontSize = 14.sp,
                             fontFamily = FontFamily.Monospace
                         )
@@ -344,8 +337,8 @@ fun RoutineTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .height(56.dp),
+                .padding(horizontal = 20.dp)
+                .height(64.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBack != null) {
@@ -359,25 +352,18 @@ fun RoutineTopBar(
             Icon(
                 imageVector = Icons.Filled.FitnessCenter,
                 contentDescription = null,
-                tint = RoutineSkin.PrimaryText,
-                modifier = Modifier.size(22.dp)
+                tint = RoutineSkin.Primary,
+                modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.size(8.dp))
             Text(
-                text = "LIFTERLAB",
-                color = RoutineSkin.PrimaryText,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.8.sp
+                text = "LifterLab",
+                color = RoutineSkin.OnSurface,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.weight(1f))
             trailingContent?.invoke()
         }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .background(RoutineSkin.Primary)
-        )
     }
 }

@@ -186,128 +186,27 @@ fun DashboardScreen(
         rutinaSugerida = pickQuickStartRoutine(rutinas, ultimaRutinaCompletada)
     }
 
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-
-            // Vista raíz del menú: panel de marca sin botón de volver.
-            RoutineTopBar()
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 16.dp)
-                    .padding(bottom = bottomBarClearance())
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = "CICLO ACTUAL: SEMANA ${profile.currentCycleWeek} / ${profile.cyclePhase}",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
-                        )
-                    }
-
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = "Perfil",
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .border(
-                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            RoundedCornerShape(16.dp)
-                        )
-                        .padding(12.dp)
-                        .clickable { onNavigateToProfile() }
-                )
-            }
-
-            // RF18/RF29 — El número grande proviene exclusivamente de series reales
-            // consolidadas en el historial, nunca de un 1RM manual del perfil.
-            val sentadillaPr = recordsSbd[MovimientoBasico.SENTADILLA] ?: 0.0
-            val bancaPr = recordsSbd[MovimientoBasico.PRESS_BANCA] ?: 0.0
-            val muertoPr = recordsSbd[MovimientoBasico.PESO_MUERTO] ?: 0.0
-            val sentadillaPeso = sentadillaPr
-            val bancaPeso = bancaPr
-            val muertoPeso = muertoPr
-
-            SbdStatCard(
-                title = "Sentadilla",
-                badgeText = if (sentadillaPr > 0) "\u2605 PR" else "SIN REGISTRO",
-                badgeNeutral = sentadillaPr <= 0,
-                weightText = formatKg(sentadillaPeso),
-                goalText = calculateGoalPercent(sentadillaPeso, profile.squatGoalKg),
-                fraction = progressFraction(sentadillaPeso, profile.squatGoalKg),
-                modifier = Modifier.padding(top = 16.dp),
-                accentColor = ColorSquat
-            )
-            SbdStatCard(
-                title = "Press Banca",
-                badgeText = if (bancaPr > 0) "\u2605 PR" else "SIN REGISTRO",
-                badgeNeutral = bancaPr <= 0,
-                weightText = formatKg(bancaPeso),
-                goalText = calculateGoalPercent(bancaPeso, profile.benchGoalKg),
-                fraction = progressFraction(bancaPeso, profile.benchGoalKg),
-                modifier = Modifier.padding(top = 16.dp),
-                accentColor = ColorBench
-            )
-            SbdStatCard(
-                title = "Peso Muerto",
-                badgeText = if (muertoPr > 0) "\u2605 PR" else "SIN REGISTRO",
-                badgeNeutral = muertoPr <= 0,
-                weightText = formatKg(muertoPeso),
-                goalText = calculateGoalPercent(muertoPeso, profile.deadliftGoalKg),
-                fraction = progressFraction(muertoPeso, profile.deadliftGoalKg),
-                modifier = Modifier.padding(top = 16.dp),
-                accentColor = ColorDeadlift
-            )
-
-            ConsistencyCard(
-                consistency = consistencia,
-                isLoading = !consistenciaCargada,
-                todayIndex = dayIndexMonday()
-            )
-
-            WeeklyVolumeCard(
-                volumeKg = weeklyVolumeKg,
-                isLoading = !sesionCargada
-            )
-
-            RecentSessionsCard(
-                sessions = recentSessions,
-                isLoading = !sesionCargada,
-                onNavigateToHistory = onNavigateToHistory
-            )
-
-            NextSessionCard(
-                routine = rutinaSugerida,
-                isLoading = !rutinasCargadas || !sesionCargada,
-                hasRoutines = rutinas.isNotEmpty(),
-                onStartRoutine = onStartRoutine,
-                onStartExpress = onStartExpress
-            )
-
-            ToolsCard(
-                onNavigateToOneRepMax = onNavigateToOneRepMax,
-                onNavigateToPlateLoader = onNavigateToPlateLoader,
-                onNavigateToCompetition = onNavigateToCompetition,
-                onNavigateToTool = onNavigateToTool
-            )
-            }
-        }
-    }
+    DashboardHome(
+        profile = profile,
+        routine = rutinaSugerida,
+        routinesLoaded = rutinasCargadas && sesionCargada,
+        consistency = consistencia,
+        consistencyLoaded = consistenciaCargada,
+        records = recordsSbd,
+        weeklyVolumeKg = weeklyVolumeKg,
+        sessionsLoaded = sesionCargada,
+        recentSessions = recentSessions,
+        onNavigateToRoutines = onNavigateToRoutines,
+        onNavigateToProfile = onNavigateToProfile,
+        onNavigateToHistory = onNavigateToHistory,
+        onNavigateToOneRepMax = onNavigateToOneRepMax,
+        onNavigateToPlateLoader = onNavigateToPlateLoader,
+        onNavigateToCompetition = onNavigateToCompetition,
+        onNavigateToTool = onNavigateToTool,
+        onStartRoutine = onStartRoutine,
+        onStartExpress = onStartExpress
+    )
 }
-
 @Composable
 private fun ConsistencyCard(
     consistency: WeeklyConsistency,
@@ -482,7 +381,7 @@ private fun StatBox(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-private fun WeeklyVolumeCard(volumeKg: Double, isLoading: Boolean) {
+internal fun WeeklyVolumeCard(volumeKg: Double, isLoading: Boolean) {
     LifterCard(Modifier.padding(top = 16.dp)) {
         CardTitle("Volumen semanal")
         Text(
@@ -498,7 +397,7 @@ private fun WeeklyVolumeCard(volumeKg: Double, isLoading: Boolean) {
 }
 
 @Composable
-private fun RecentSessionsCard(
+internal fun RecentSessionsCard(
     sessions: List<WorkoutSession>,
     isLoading: Boolean,
     onNavigateToHistory: () -> Unit
@@ -568,7 +467,7 @@ internal fun volumenDeEstaSemana(sessions: List<WorkoutSession>, nowMillis: Long
 }
 
 @Composable
-private fun ToolsCard(
+internal fun ToolsCard(
     onNavigateToOneRepMax: () -> Unit,
     onNavigateToPlateLoader: () -> Unit,
     onNavigateToCompetition: () -> Unit,

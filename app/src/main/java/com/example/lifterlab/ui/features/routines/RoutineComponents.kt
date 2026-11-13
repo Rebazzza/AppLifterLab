@@ -692,13 +692,13 @@ fun ExercisePickerDialog(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF1C1B1D),
+        containerColor = Color(0xFFFFFFFF),
         dragHandle = {
             Box(
                 Modifier
                     .padding(top = 12.dp, bottom = 4.dp)
                     .size(width = 40.dp, height = 4.dp)
-                    .background(Color(0xFF2A2A2C), CircleShape)
+                    .background(Color(0xFFE5E8F2), CircleShape)
             )
         },
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
@@ -719,13 +719,13 @@ fun ExercisePickerDialog(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Cambiar ejercicio",
-                        color = Color(0xFFE6E1E6),
+                        color = Color(0xFF171B2C),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "Selecciona el nuevo movimiento para la serie",
-                        color = Color(0xFFC9C4CA),
+                        color = Color(0xFF60667A),
                         fontSize = 10.sp,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(top = 2.dp)
@@ -735,15 +735,15 @@ fun ExercisePickerDialog(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF201F22))
-                        .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F6FC))
+                        .border(1.dp, Color(0xFFE5E8F2), RoundedCornerShape(8.dp))
                         .clickable { onDismiss() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cerrar",
-                        tint = Color(0xFFC9C4CA),
+                        tint = Color(0xFF60667A),
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -759,15 +759,15 @@ fun ExercisePickerDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF201F22))
-                        .border(2.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F6FC))
+                        .border(2.dp, Color(0xFFE5E8F2), RoundedCornerShape(8.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Buscar",
-                        tint = Color(0xFFC9C4CA),
+                        tint = Color(0xFF60667A),
                         modifier = Modifier.size(18.dp)
                     )
                     BasicTextField(
@@ -775,7 +775,7 @@ fun ExercisePickerDialog(
                         onValueChange = { searchQuery = it },
                         singleLine = true,
                         textStyle = TextStyle(
-                            color = Color(0xFFE6E1E6),
+                            color = Color(0xFF171B2C),
                             fontSize = 13.sp,
                             fontFamily = FontFamily.SansSerif
                         ),
@@ -786,7 +786,7 @@ fun ExercisePickerDialog(
                             if (searchQuery.isEmpty()) {
                                 Text(
                                     text = "Buscar ejercicio...",
-                                    color = Color(0xFF52525B),
+                                    color = Color(0xFF60667A),
                                     fontSize = 13.sp
                                 )
                             }
@@ -832,7 +832,7 @@ fun ExercisePickerDialog(
                 if (filteredCustom.isEmpty() && filteredBasics.isEmpty() && filteredGlobal.isEmpty()) {
                     Text(
                         text = "No se encontraron ejercicios con '$searchQuery'",
-                        color = Color(0xFFC9C4CA),
+                        color = Color(0xFF60667A),
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(vertical = 16.dp)
@@ -890,8 +890,8 @@ fun ExercisePickerDialog(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF201F22))
-                    .border(1.dp, Color(0xFF2A2A2C))
+                    .background(Color(0xFFF5F6FC))
+                    .border(1.dp, Color(0xFFE5E8F2))
                     .padding(16.dp),
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -899,12 +899,12 @@ fun ExercisePickerDialog(
                 Icon(
                     imageVector = Icons.Outlined.Info,
                     contentDescription = "Info",
-                    tint = Color(0xFFC1C1FB),
+                    tint = Color(0xFF4E51CE),
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
                     text = "Las series se conservan; solo cambia el ejercicio. El peso, repeticiones y RPE actuales se mantendrán intactos.",
-                    color = Color(0xFFC9C4CA),
+                    color = Color(0xFF60667A),
                     fontSize = 12.sp,
                     lineHeight = 16.sp
                 )
@@ -920,8 +920,8 @@ private fun ExerciseSheetRow(
     isCurrent: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isCurrent) Color(0xFFC1C1FB) else Color(0xFF2A2A2C)
-    val bgColor = if (isCurrent) Color(0x1AC1C1FB) else Color(0xFF201F22)
+    val borderColor = if (isCurrent) Color(0xFF4E51CE) else Color(0xFFE5E8F2)
+    val bgColor = if (isCurrent) Color(0xFFEEF0FF) else Color(0xFFF5F6FC)
     val borderWidth = if (isCurrent) 2.dp else 1.dp
 
     Row(
@@ -944,12 +944,12 @@ private fun ExerciseSheetRow(
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(Color(0xFFC1C1FB), CircleShape)
+                        .background(Color(0xFF4E51CE), CircleShape)
                 )
             }
             Text(
                 text = name,
-                color = if (isCurrent) Color(0xFFC1C1FB) else Color(0xFFE6E1E6),
+                color = if (isCurrent) Color(0xFF4E51CE) else Color(0xFF171B2C),
                 fontSize = 14.sp,
                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
             )
@@ -958,12 +958,12 @@ private fun ExerciseSheetRow(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFC1C1FB))
+                    .background(Color(0xFF4E51CE))
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = "ACTUAL",
-                    color = Color(0xFF131315),
+                    color = Color.White,
                     fontSize = 9.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
@@ -972,7 +972,7 @@ private fun ExerciseSheetRow(
         } else {
             Text(
                 text = categoryTag,
-                color = Color(0xFFC9C4CA),
+                color = Color(0xFF60667A),
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace
             )
@@ -985,7 +985,7 @@ private fun ExerciseSheetRow(
 private fun PickerSectionLabel(title: String) {
     Text(
         text = title,
-        color = Color(0xFF52525B),
+        color = Color(0xFF60667A),
         fontSize = 10.sp,
         fontFamily = FontFamily.Monospace,
         letterSpacing = 1.sp,
@@ -1024,8 +1024,8 @@ fun RestTimerWidget(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Color(0xFF141417))
-            .border(1.dp, Color(0xFF242427), shape)
+            .background(Color(0xFFFFFFFF))
+            .border(1.dp, Color(0xFFE5E8F2), shape)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)

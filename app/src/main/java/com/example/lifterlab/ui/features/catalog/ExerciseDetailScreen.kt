@@ -138,7 +138,7 @@ fun ExerciseDetailScreen(
 
 @Composable
 private fun ExerciseDetailContent(exercise: Exercise) {
-    // Contenedor de la demostración: superficie oscura #1C1B1D, esquinas 12dp y
+    // Contenedor de la demostración: superficie clara, esquinas 12dp y
     // borde suave 1dp outline_variant (Design System "Titanio y Acero").
     Box(
         modifier = Modifier

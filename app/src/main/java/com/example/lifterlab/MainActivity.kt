@@ -28,6 +28,7 @@ import com.example.lifterlab.ui.components.ActiveSessionPanel
 import com.example.lifterlab.ui.components.LifterBottomNavBar
 import com.example.lifterlab.ui.components.LifterNavigationRail
 import com.example.lifterlab.ui.components.LifterTab
+import com.example.lifterlab.ui.features.auth.EmergenciaScreen
 import com.example.lifterlab.ui.features.auth.LoginScreen
 import com.example.lifterlab.ui.features.auth.RegisterScreen
 import com.example.lifterlab.ui.features.competition.CompetitionScreen
@@ -79,6 +80,7 @@ private sealed class AppScreen {
     // Entrenamiento en curso: se abre desde el panel flotante de sesión activa.
     object SesionEnCurso : AppScreen()
     object Guide1RM : AppScreen()
+    object Emergencia : AppScreen()
 
 
 
@@ -184,8 +186,10 @@ private fun AppNavigator() {
                 )
                 AppScreen.Register -> RegisterScreen(
                     onNavigateToLogin = { volverA(AppScreen.Login) },
-                    onRegisterSuccess = { irAModulo(AppScreen.Dashboard) }
+                    onRegisterSuccess = { irAModulo(AppScreen.Dashboard) },
+                    onNavigateToEmergencia = {navegarA(AppScreen.Emergencia)}
                 )
+                AppScreen.Emergencia -> EmergenciaScreen(onBack = {volverA(AppScreen.Register)})
                 AppScreen.Dashboard -> DashboardScreen(
                     onNavigateToRoutines = { irAModulo(AppScreen.Routines) },
                     onNavigateToProfile = { irAModulo(AppScreen.Profile) },
@@ -227,7 +231,9 @@ private fun AppNavigator() {
                     onNavigateToEdit = { navegarA(AppScreen.ProfileEdit) },
                     onNavigateToHistory = { navegarA(AppScreen.History) },
                     onSignOut = { cerrarSesion() }
+
                 )
+
                 AppScreen.ProfileEdit -> ProfileEditScreen(
                     onBack = { volverA(AppScreen.Profile) }
                 )
@@ -244,7 +250,8 @@ private fun AppNavigator() {
                 onNavigateToRoutines = { irAModulo(AppScreen.Routines) },
                 onNavigateToTools = { irAModulo(AppScreen.Tools) },
                 onNavigateToProfile = { irAModulo(AppScreen.Profile) },
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter),
+                lightAppearance = true
             )
         }
 

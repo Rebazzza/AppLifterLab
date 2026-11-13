@@ -48,7 +48,6 @@ object RestTimerState {
     fun remainingSeconds(): Int {
         if (!isRunning || targetTimeMillis <= 0L) return 0
         val diff = targetTimeMillis - System.currentTimeMillis()
-        val secs = (diff / 1000L).toInt()
-        return if (secs <= 0) 0 else secs
+        return if (diff <= 0L) 0 else ((diff + 999L) / 1000L).toInt()
     }
 }

@@ -37,6 +37,7 @@ import com.example.lifterlab.ui.components.ScreenTitle
 import com.example.lifterlab.ui.components.ScreenSubtitle
 import com.example.lifterlab.ui.features.routines.RoutineTopBar
 import com.example.lifterlab.toast
+import com.example.lifterlab.ui.components.SecondaryButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,6 +46,7 @@ import kotlinx.coroutines.withContext
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: () -> Unit,
+    onNavigateToEmergencia: ()->Unit,
     authRepository: AuthRepository = remember { AuthRepository() }
 ) {
     var nombre by remember { mutableStateOf("") }
@@ -118,6 +120,10 @@ fun RegisterScreen(
                             )
                         },
                         enabled = !cargando
+                    )
+                    SecondaryButton(
+                        text = "Emergencia",
+                        onNavigateToEmergencia
                     )
                 }
 

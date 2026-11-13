@@ -1,47 +1,45 @@
 package com.example.lifterlab.ui.theme
 
+import android.app.Activity
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
 
-/**
- * Tokens oficiales según la skill `ui-design-system.md` ("Titanio y Acero"):
- * fondo casi negro OLED (#09090B), superficies #121212 con borde #2A2A2A,
- * acento de marca #6366F1 y texto principal #E5E1E4.
- */
-val BgBackground = Color(0xFF09090B)       // bg_background
-val FeaturedSurface = Color(0xFF18172B)
-val BgSurfaceLow = Color(0xFF121212)       // bg_surface_container (tarjetas)
-val BgSurfaceHigh = Color(0xFF2A2A2C)      // contenedores destacados
-val BgSurfaceContainer = Color(0xFF1C1B1D) // chips y barra de navegación
-val OutlineVariant = Color(0xFF2A2A2A)     // outline_variant (bordes 1dp)
-val PrimaryAccent = Color(0xFF6366F1)      // primary_accent (brand core)
-val PrimaryContainer = Color(0xFF8083FF)
-val SecondaryAccent = Color(0xFF8CB8FF)
-val TertiaryAccent = Color(0xFF4EDEA3)
-val ErrorAccent = Color(0xFFFFB4AB)
-val TextOnBackground = Color(0xFFE5E1E4)
-val TextOnSurfaceVariant = Color(0xFFC7C4D7)
+/** Azul titanio sobre superficies claras para toda la app. */
+val BgBackground = Color(0xFFF8F9FD)
+val FeaturedSurface = Color(0xFFEEF0FF)
+val BgSurfaceLow = Color.White
+val BgSurfaceHigh = Color(0xFFF1F3FC)
+val BgSurfaceContainer = Color.White
+val OutlineVariant = Color(0xFFE5E8F2)
+val PrimaryAccent = Color(0xFF6366F1)
+val PrimaryContainer = Color(0xFF6366F1)
+val SecondaryAccent = Color(0xFF365FBB)
+val TertiaryAccent = Color(0xFF16815E)
+val ErrorAccent = Color(0xFFB42332)
+val TextOnBackground = Color(0xFF171B2C)
+val TextOnSurfaceVariant = Color(0xFF60667A)
 
-// Asignación cromática de los 3 básicos (SBD) — ui-design-system.md §3.
-val ColorSquat = Color(0xFF10B981)    // Sentadilla - Verde Neón
-val ColorBench = PrimaryAccent        // Press Banca - azul índigo de LifterLab
-val ColorDeadlift = Color(0xFFEF4444) // Peso Muerto - Rojo Coral
+val ColorSquat = Color(0xFF16815E)
+val ColorBench = PrimaryAccent
+val ColorDeadlift = Color(0xFFC64646)
 
-// Barra de navegación inferior (pill/cápsula).
-val NavBarSurface = Color(0xFF1C1B1D)
-val NavIconActive = Color(0xFF0B0B0F)
-val NavIconInactive = Color(0xFF8A8A93)
+val NavBarSurface = Color.White
+val NavIconActive = TextOnBackground
+val NavIconInactive = TextOnSurfaceVariant
 
-private val LifterLabColors = darkColorScheme(
+private val LifterLabColors = lightColorScheme(
     primary = PrimaryAccent,
     onPrimary = Color.White,
     primaryContainer = PrimaryContainer,
-    onPrimaryContainer = Color(0xFF0B0B2E),
+    onPrimaryContainer = Color.White,
     secondary = SecondaryAccent,
-    secondaryContainer = Color(0xFF242047),
-    onSecondaryContainer = Color(0xFFA5B4FC),
+    secondaryContainer = Color(0xFFEEF0FF),
+    onSecondaryContainer = TextOnBackground,
     tertiary = TertiaryAccent,
     error = ErrorAccent,
     background = BgBackground,
@@ -52,17 +50,22 @@ private val LifterLabColors = darkColorScheme(
     onSurfaceVariant = TextOnSurfaceVariant,
     outline = OutlineVariant,
     outlineVariant = OutlineVariant,
-    surfaceContainerLowest = Color(0xFF0B0B0D),
+    surfaceContainerLowest = Color.White,
     surfaceContainerLow = BgSurfaceLow,
     surfaceContainer = BgSurfaceContainer,
     surfaceContainerHigh = BgSurfaceHigh,
-    surfaceContainerHighest = Color(0xFF353437)
+    surfaceContainerHighest = Color(0xFFE8EBF6)
 )
 
 @Composable
 fun LifterLabTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = LifterLabColors,
-        content = content
-    )
+    val window = (LocalContext.current as? Activity)?.window
+    SideEffect {
+        window?.let {
+            val controller = WindowCompat.getInsetsController(it, it.decorView)
+            controller.isAppearanceLightStatusBars = true
+            controller.isAppearanceLightNavigationBars = true
+        }
+    }
+    MaterialTheme(colorScheme = LifterLabColors, content = content)
 }

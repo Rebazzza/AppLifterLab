@@ -202,8 +202,8 @@ private fun NotLoadableBanner(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp)
-            .background(Color(0xFF201F22), RoundedCornerShape(12.dp))
-            .border(BorderStroke(2.dp, Color(0xFFFFB4AB)), RoundedCornerShape(12.dp))
+            .background(Color(0xFFF5F6FC), RoundedCornerShape(12.dp))
+            .border(BorderStroke(2.dp, Color(0xFFB42332)), RoundedCornerShape(12.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -214,20 +214,20 @@ private fun NotLoadableBanner(
             Icon(
                 imageVector = Icons.Filled.Warning,
                 contentDescription = "Alerta",
-                tint = Color(0xFFFFB4AB),
+                tint = Color(0xFFB42332),
                 modifier = Modifier.size(24.dp)
             )
             Column {
                 Text(
                     text = "PESO NO ARMABLE",
-                    color = Color(0xFFFFB4AB),
+                    color = Color(0xFFB42332),
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "${formatKg(load.targetKg)} kg no se puede armar con los discos estándar (el disco más pequeño es de 1.25 kg por lado).",
-                    color = Color(0xFFE6E1E6),
+                    color = Color(0xFF171B2C),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     modifier = Modifier.padding(top = 4.dp)
@@ -244,15 +244,15 @@ private fun NotLoadableBanner(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF1C1B1D))
-                        .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFFFFF))
+                        .border(1.dp, Color(0xFFE5E8F2), RoundedCornerShape(8.dp))
                         .clickable { onSelectTarget(lower) }
                         .padding(vertical = 8.dp, horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Usar ${formatKg(lower)} kg",
-                        color = Color(0xFFC1C1FB),
+                        color = Color(0xFF4E51CE),
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold
@@ -264,15 +264,15 @@ private fun NotLoadableBanner(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF1C1B1D))
-                        .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFFFFF))
+                        .border(1.dp, Color(0xFFE5E8F2), RoundedCornerShape(8.dp))
                         .clickable { onSelectTarget(upper) }
                         .padding(vertical = 8.dp, horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Usar ${formatKg(upper)} kg",
-                        color = Color(0xFFC1C1FB),
+                        color = Color(0xFF4E51CE),
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold

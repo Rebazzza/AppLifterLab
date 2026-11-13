@@ -164,11 +164,10 @@ fun WorkoutRunnerScreen(
                 val secs = RestTimerState.remainingSeconds()
                 if (secs <= 0) {
                     val name = RestTimerState.exerciseName
-                    RestTimerState.clear()
+                    val target = RestTimerState.targetTimeMillis
+                    RestTimerAlarm.finish(context, name, target)
                     timerRemainingSeconds = 0
                     restRunning = false
-                    // La alarma del sistema entrega la notificación para no duplicarla
-                    // mientras la pantalla está activa.
                     break
                 }
                 timerRemainingSeconds = secs

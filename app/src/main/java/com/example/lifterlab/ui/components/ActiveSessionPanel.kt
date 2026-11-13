@@ -39,6 +39,7 @@ import com.example.lifterlab.data.RestTimerState
 import com.example.lifterlab.data.WorkoutViewState
 import com.example.lifterlab.data.model.ActiveSession
 import com.example.lifterlab.data.repository.ActiveSessionRepository
+import com.example.lifterlab.ui.features.routines.RestTimerAlarm
 import com.example.lifterlab.ui.theme.NavBarSurface
 import com.example.lifterlab.ui.theme.NavIconInactive
 import com.example.lifterlab.ui.theme.OutlineVariant
@@ -91,7 +92,7 @@ fun ActiveSessionPanel(
         while (RestTimerState.isRunning && RestTimerState.targetTimeMillis > 0L) {
             val diff = RestTimerState.targetTimeMillis - System.currentTimeMillis()
             if (diff <= 0) {
-                RestTimerState.clear()
+                RestTimerAlarm.finish(context, RestTimerState.exerciseName, RestTimerState.targetTimeMillis)
                 break
             }
             tic = System.currentTimeMillis()

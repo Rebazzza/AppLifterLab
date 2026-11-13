@@ -137,8 +137,8 @@ internal fun OneRepMaxPanel(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .padding(top = 16.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF201F22))
-                    .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF5F6FC))
+                    .border(1.dp, Color(0xFFE5E8F2), RoundedCornerShape(8.dp))
                     .padding(12.dp),
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -146,12 +146,12 @@ internal fun OneRepMaxPanel(modifier: Modifier = Modifier) {
                 Icon(
                     imageVector = Icons.Outlined.Info,
                     contentDescription = "Info",
-                    tint = Color(0xFFC1C1FB),
+                    tint = Color(0xFF4E51CE),
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
                     text = "Con 1 repetición, el 1RM es el mismo peso levantado. Para estimaciones con alta precisión técnica se recomienda testear entre 2 y 5 reps.",
-                    color = Color(0xFFC9C4CA),
+                    color = Color(0xFF60667A),
                     fontSize = 12.sp,
                     lineHeight = 16.sp
                 )

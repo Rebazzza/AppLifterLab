@@ -434,7 +434,7 @@ fun DeleteSessionConfirmationDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.8f))
+                .background(Color(0xFF171B2C).copy(alpha = 0.42f))
                 .clickable(onClick = onDismiss),
             contentAlignment = Alignment.Center
         ) {
@@ -443,8 +443,8 @@ fun DeleteSessionConfirmationDialog(
                     .padding(20.dp)
                     .widthIn(max = 340.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF1C1B1D))
-                    .border(2.dp, Color(0xFF2A2A2C), RoundedCornerShape(16.dp))
+                    .background(Color(0xFFFFFFFF))
+                    .border(2.dp, Color(0xFFE5E8F2), RoundedCornerShape(16.dp))
                     .clickable(enabled = false) {}
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -465,21 +465,21 @@ fun DeleteSessionConfirmationDialog(
                         Icon(
                             imageVector = Icons.Outlined.Warning,
                             contentDescription = "Alerta",
-                            tint = Color(0xFFFFB4AB),
+                            tint = Color(0xFFB42332),
                             modifier = Modifier.size(24.dp)
                         )
                     }
                     Column {
                         Text(
                             text = "¿Eliminar esta sesión?",
-                            color = Color(0xFFE6E1E6),
+                            color = Color(0xFF171B2C),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             lineHeight = 20.sp
                         )
                         Text(
                             text = "Acción irreversible",
-                            color = Color(0xFFC9C4CA),
+                            color = Color(0xFF60667A),
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace
                         )
@@ -491,8 +491,8 @@ fun DeleteSessionConfirmationDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF201F22))
-                        .border(1.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F6FC))
+                        .border(1.dp, Color(0xFFE5E8F2), RoundedCornerShape(8.dp))
                         .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -500,21 +500,21 @@ fun DeleteSessionConfirmationDialog(
                     Column {
                         Text(
                             text = session.routineName.ifBlank { "Sesión" },
-                            color = Color(0xFFE6E1E6),
+                            color = Color(0xFF171B2C),
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = formatShortDate(session.date),
-                            color = Color(0xFFC9C4CA),
+                            color = Color(0xFF60667A),
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace
                         )
                     }
                     Text(
                         text = formatVolumeKg(session.totalVolumeKg),
-                        color = Color(0xFFC1C1FB),
+                        color = Color(0xFF4E51CE),
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold
@@ -524,7 +524,7 @@ fun DeleteSessionConfirmationDialog(
                 // Texto de confirmación
                 Text(
                     text = "Esta acción no se puede deshacer. Se borrarán todas las series registradas, cálculos de volumen y marcas históricas asociadas a este día.",
-                    color = Color(0xFFC9C4CA),
+                    color = Color(0xFF60667A),
                     fontSize = 12.sp,
                     lineHeight = 18.sp
                 )
@@ -539,14 +539,14 @@ fun DeleteSessionConfirmationDialog(
                             .weight(1f)
                             .height(44.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF201F22))
-                            .border(2.dp, Color(0xFF2A2A2C), RoundedCornerShape(8.dp))
+                            .background(Color(0xFFF5F6FC))
+                            .border(2.dp, Color(0xFFE5E8F2), RoundedCornerShape(8.dp))
                             .clickable { onDismiss() },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "CANCELAR",
-                            color = Color(0xFFE6E1E6),
+                            color = Color(0xFF171B2C),
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold
@@ -558,7 +558,7 @@ fun DeleteSessionConfirmationDialog(
                             .weight(1f)
                             .height(44.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFFFB4AB))
+                            .background(Color(0xFFB42332))
                             .clickable { onConfirm() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -569,12 +569,12 @@ fun DeleteSessionConfirmationDialog(
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = "Eliminar",
-                                tint = Color(0xFF410002),
+                                tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
                                 text = "ELIMINAR",
-                                color = Color(0xFF410002),
+                                color = Color.White,
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold
